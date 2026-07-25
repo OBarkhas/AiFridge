@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Item {
+  id         String   @id @default(cuid())
+  userId     String   // Clerk User ID
+  name       String   // Бүтээгдэхүүний нэр
+  amount     String?  // Тоо хэмжээ
+  expireDate DateTime // Дуусах огноо
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
