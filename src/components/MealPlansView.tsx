@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarCheck, ChevronDown, Plus, Trash2, X } from "lucide-react";
+import { CalendarCheck, ChevronDown, Plus, Trash2, X, Sparkles } from "lucide-react";
 
 interface MealPlan {
   id: string;
@@ -31,7 +31,7 @@ const DAYS = [
 
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 
-export default function MealPlansView() {
+export default function MealPlansView({ onAskAI }: { onAskAI?: (recipeTitle: string) => void }) {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -419,6 +419,19 @@ export default function MealPlansView() {
                             >
                               <Trash2 className="h-3 w-3" />
                             </button>
+                            {onAskAI && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAskAI(plan.recipeTitle);
+                                }}
+                                className="absolute right-1 bottom-1 inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-white bg-zinc-900 opacity-0 transition-all duration-200 hover:bg-zinc-800 group-hover:opacity-100"
+                                title="Ask AI how to make this"
+                              >
+                                <Sparkles className="h-2.5 w-2.5" />
+                                Ask AI
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>

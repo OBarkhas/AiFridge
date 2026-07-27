@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Sidebar from "./Sidebar";
 import OverviewView from "./OverviewView";
 import ItemsView from "./ItemsView";
 import RecipesView from "./RecipesView";
 import MealPlansView from "./MealPlansView";
+import AIView from "./AIView";
 import type { ViewType } from "./Sidebar";
 
 export default function Dashboard() {
   const [activeView, setActiveView] = useState<ViewType>("overview");
+  const [pendingAIPrompt, setPendingAIPrompt] = useState<string | null>(null);
+
+  const handleAskAI = useCallback((recipeTitle: string) => {
+    setPendingAIPrompt(
+      `How do I prepare ${recipeTitle}? Can you give me the step-by-step recipe and cooking tips?`,
+    );
+    setActiveView("ai");
+  }, []);
+
+  const handleAISent = useCallback(() => {
+    setPendingAIPrompt(null);
+  }, []);
 
   const renderView = () => {
     switch (activeView) {
@@ -20,7 +33,14 @@ export default function Dashboard() {
       case "recipes":
         return <RecipesView />;
       case "meal-plans":
-        return <MealPlansView />;
+        return <MealPlansView onAskAI={handleAskAI} />;
+      case "ai":
+        return (
+          <AIView
+            initialPrompt={pendingAIPrompt}
+            onPromptSent={handleAISent}
+          />
+        );
     }
   };
 

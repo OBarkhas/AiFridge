@@ -7,9 +7,10 @@ import {
   CalendarCheck,
   LayoutDashboard,
   LogOut,
+  Bot,
 } from "lucide-react";
 
-export type ViewType = "overview" | "items" | "recipes" | "meal-plans";
+export type ViewType = "overview" | "items" | "recipes" | "meal-plans" | "ai";
 
 export interface SidebarProps {
   activeView: ViewType;
@@ -25,6 +26,7 @@ const navItems: {
   { view: "items", label: "Fridge Items", icon: Refrigerator },
   { view: "recipes", label: "Recipes", icon: ChefHat },
   { view: "meal-plans", label: "Meal Plans", icon: CalendarCheck },
+  { view: "ai", label: "AI Chat", icon: Bot },
 ];
 
 export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
