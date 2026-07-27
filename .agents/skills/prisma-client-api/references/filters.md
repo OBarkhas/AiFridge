@@ -5,77 +5,91 @@ Filter operators for the `where` clause.
 ## Equality
 
 ```typescript
-// Exact match (implicit)
-where: { email: 'alice@prisma.io' }
+where: {
+  email: "alice@prisma.io";
+}
 
-// Explicit equals
-where: { email: { equals: 'alice@prisma.io' } }
+where: {
+  email: {
+    equals: "alice@prisma.io";
+  }
+}
 
-// Not equal
-where: { email: { not: 'alice@prisma.io' } }
+where: {
+  email: {
+    not: "alice@prisma.io";
+  }
+}
 ```
 
 ## Comparison
 
 ```typescript
-// Greater than
+
 where: { age: { gt: 18 } }
 
-// Greater than or equal
+
 where: { age: { gte: 18 } }
 
-// Less than
+
 where: { age: { lt: 65 } }
 
-// Less than or equal
+
 where: { age: { lte: 65 } }
 
-// Combined
+
 where: { age: { gte: 18, lte: 65 } }
 ```
 
 ## Lists
 
 ```typescript
-// In array
+
 where: { role: { in: ['ADMIN', 'MODERATOR'] } }
 
-// Not in array
+
 where: { role: { notIn: ['GUEST', 'BANNED'] } }
 ```
 
 ## String Filters
 
 ```typescript
-// Contains
+
 where: { email: { contains: 'prisma' } }
 
-// Starts with
+
 where: { email: { startsWith: 'alice' } }
 
-// Ends with
+
 where: { email: { endsWith: '@prisma.io' } }
 
-// Case-insensitive (default for some databases)
-where: { 
-  email: { 
+
+where: {
+  email: {
     contains: 'PRISMA',
-    mode: 'insensitive' 
-  } 
+    mode: 'insensitive'
+  }
 }
 ```
 
 ## Null Checks
 
 ```typescript
-// Is null
-where: { deletedAt: null }
+where: {
+  deletedAt: null;
+}
 
-// Is not null
-where: { deletedAt: { not: null } }
+where: {
+  deletedAt: {
+    not: null;
+  }
+}
 
-// Using isSet (for optional fields)
-where: { middleName: { isSet: true } }
+where: {
+  middleName: {
+    isSet: true;
+  }
+}
 ```
 
 ## Logical Operators
@@ -83,7 +97,7 @@ where: { middleName: { isSet: true } }
 ### AND (implicit)
 
 ```typescript
-// Multiple conditions = AND
+
 where: {
   email: { contains: '@prisma.io' },
   role: 'ADMIN'
@@ -94,10 +108,7 @@ where: {
 
 ```typescript
 where: {
-  AND: [
-    { email: { contains: '@prisma.io' } },
-    { role: 'ADMIN' }
-  ]
+  AND: [{ email: { contains: "@prisma.io" } }, { role: "ADMIN" }];
 }
 ```
 
@@ -106,9 +117,9 @@ where: {
 ```typescript
 where: {
   OR: [
-    { email: { contains: '@gmail.com' } },
-    { email: { contains: '@prisma.io' } }
-  ]
+    { email: { contains: "@gmail.com" } },
+    { email: { contains: "@prisma.io" } },
+  ];
 }
 ```
 
@@ -117,16 +128,12 @@ where: {
 ```typescript
 where: {
   NOT: {
-    role: 'GUEST'
+    role: "GUEST";
   }
 }
 
-// Multiple NOT conditions
 where: {
-  NOT: [
-    { role: 'GUEST' },
-    { verified: false }
-  ]
+  NOT: [{ role: "GUEST" }, { verified: false }];
 }
 ```
 
@@ -154,10 +161,11 @@ where: {
 At least one related record matches:
 
 ```typescript
-// Users with at least one published post
 where: {
   posts: {
-    some: { published: true }
+    some: {
+      published: true;
+    }
   }
 }
 ```
@@ -167,10 +175,11 @@ where: {
 All related records match:
 
 ```typescript
-// Users where all posts are published
 where: {
   posts: {
-    every: { published: true }
+    every: {
+      published: true;
+    }
   }
 }
 ```
@@ -180,10 +189,11 @@ where: {
 No related records match:
 
 ```typescript
-// Users with no published posts
 where: {
   posts: {
-    none: { published: true }
+    none: {
+      published: true;
+    }
   }
 }
 ```
@@ -191,17 +201,17 @@ where: {
 ### is / isNot (1-to-1)
 
 ```typescript
-// Users with profile in specific country
 where: {
   profile: {
-    is: { country: 'USA' }
+    is: {
+      country: "USA";
+    }
   }
 }
 
-// Users without profile
 where: {
   profile: {
-    isNot: null
+    isNot: null;
   }
 }
 ```
@@ -211,23 +221,35 @@ where: {
 For fields like `String[]`:
 
 ```typescript
-// Has element
-where: { tags: { has: 'typescript' } }
+where: {
+  tags: {
+    has: "typescript";
+  }
+}
 
-// Has some elements
-where: { tags: { hasSome: ['typescript', 'javascript'] } }
+where: {
+  tags: {
+    hasSome: ["typescript", "javascript"];
+  }
+}
 
-// Has every element
-where: { tags: { hasEvery: ['typescript', 'prisma'] } }
+where: {
+  tags: {
+    hasEvery: ["typescript", "prisma"];
+  }
+}
 
-// Is empty
-where: { tags: { isEmpty: true } }
+where: {
+  tags: {
+    isEmpty: true;
+  }
+}
 ```
 
 ## JSON Filters
 
 ```typescript
-// Path-based filter
+
 where: {
   metadata: {
     path: ['settings', 'theme'],
@@ -235,7 +257,7 @@ where: {
   }
 }
 
-// String contains in JSON
+
 where: {
   metadata: {
     path: ['bio'],
@@ -247,10 +269,9 @@ where: {
 ## Full-Text Search
 
 ```typescript
-// Requires @@fulltext index
 where: {
   content: {
-    search: 'prisma database'
+    search: "prisma database";
   }
 }
 ```

@@ -7,33 +7,31 @@ Several features have been removed in Prisma v7. Here's how to migrate.
 ### Removed
 
 ```typescript
-// ❌ No longer works in v7
 prisma.$use(async (params, next) => {
-  const before = Date.now()
-  const result = await next(params)
-  const after = Date.now()
-  console.log(`Query took ${after - before}ms`)
-  return result
-})
+  const before = Date.now();
+  const result = await next(params);
+  const after = Date.now();
+  console.log(`Query took ${after - before}ms`);
+  return result;
+});
 ```
 
 ### Use Client Extensions Instead
 
 ```typescript
-// ✅ v7 approach
 const prisma = new PrismaClient({ adapter }).$extends({
   query: {
     $allModels: {
       async $allOperations({ operation, model, args, query }) {
-        const before = Date.now()
-        const result = await query(args)
-        const after = Date.now()
-        console.log(`${model}.${operation} took ${after - before}ms`)
-        return result
+        const before = Date.now();
+        const result = await query(args);
+        const after = Date.now();
+        console.log(`${model}.${operation} took ${after - before}ms`);
+        return result;
       },
     },
   },
-})
+});
 ```
 
 ### Common Middleware Patterns
@@ -45,20 +43,18 @@ const prisma = new PrismaClient({ adapter }).$extends({
   query: {
     user: {
       async delete({ args, query }) {
-        // Convert delete to soft delete
         return prisma.user.update({
           where: args.where,
           data: { deletedAt: new Date() },
-        })
+        });
       },
       async findMany({ args, query }) {
-        // Filter out soft-deleted records
-        args.where = { ...args.where, deletedAt: null }
-        return query(args)
+        args.where = { ...args.where, deletedAt: null };
+        return query(args);
       },
     },
   },
-})
+});
 ```
 
 #### Logging
@@ -68,12 +64,12 @@ const prisma = new PrismaClient({ adapter }).$extends({
   query: {
     $allModels: {
       async $allOperations({ operation, model, args, query }) {
-        console.log(`${model}.${operation}`, JSON.stringify(args))
-        return query(args)
+        console.log(`${model}.${operation}`, JSON.stringify(args));
+        return query(args);
       },
     },
   },
-})
+});
 ```
 
 ## Metrics
@@ -83,8 +79,7 @@ const prisma = new PrismaClient({ adapter }).$extends({
 The Metrics preview feature has been removed.
 
 ```typescript
-// ❌ No longer works
-const metrics = await prisma.$metrics.json()
+const metrics = await prisma.$metrics.json();
 ```
 
 ### Alternatives
@@ -92,26 +87,25 @@ const metrics = await prisma.$metrics.json()
 #### Custom counter with extensions
 
 ```typescript
-let totalQueries = 0
+let totalQueries = 0;
 
 const prisma = new PrismaClient({ adapter }).$extends({
   client: {
     async $totalQueries() {
-      return totalQueries
+      return totalQueries;
     },
   },
   query: {
     $allModels: {
       async $allOperations({ query, args }) {
-        totalQueries += 1
-        return query(args)
+        totalQueries += 1;
+        return query(args);
       },
     },
   },
-})
+});
 
-// Usage
-const count = await prisma.$totalQueries()
+const count = await prisma.$totalQueries();
 ```
 
 #### Use driver-level metrics
@@ -160,13 +154,13 @@ prisma db execute --file ./script.sql
 
 ## migrate diff Options
 
-| Removed | Replacement |
-|---------|-------------|
-| `--from-url` | `--from-config-datasource` |
-| `--to-url` | `--to-config-datasource` |
-| `--from-schema-datasource` | `--from-config-datasource` |
-| `--to-schema-datasource` | `--to-config-datasource` |
-| `--shadow-database-url` | Configure in `prisma.config.ts` |
+| Removed                    | Replacement                     |
+| -------------------------- | ------------------------------- |
+| `--from-url`               | `--from-config-datasource`      |
+| `--to-url`                 | `--to-config-datasource`        |
+| `--from-schema-datasource` | `--from-config-datasource`      |
+| `--to-schema-datasource`   | `--to-config-datasource`        |
+| `--shadow-database-url`    | Configure in `prisma.config.ts` |
 
 ### Example
 
@@ -201,12 +195,12 @@ prisma db seed  # Must run explicitly
 The `prisma-client` generator no longer exposes `Prisma.validator`. Use TypeScript's `satisfies` operator instead.
 
 ```typescript
-import { Prisma } from '../generated/prisma/client'
+import { Prisma } from "../generated/prisma/client";
 
 const userSelect = {
   id: true,
   email: true,
-} satisfies Prisma.UserSelect
+} satisfies Prisma.UserSelect;
 ```
 
 ## rejectOnNotFound
@@ -214,17 +208,15 @@ const userSelect = {
 Removed in v5.0.0 (already deprecated).
 
 ```typescript
-// ❌ Removed
 const prisma = new PrismaClient({
   rejectOnNotFound: true,
-})
+});
 
-// ✅ Use OrThrow methods
 const user = await prisma.user.findUniqueOrThrow({
   where: { id: 1 },
-})
+});
 
 const user = await prisma.user.findFirstOrThrow({
-  where: { email: 'test@example.com' },
-})
+  where: { email: "test@example.com" },
+});
 ```

@@ -18,13 +18,13 @@ prisma migrate dev [options]
 
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `--name` / `-n` | Name the migration |
-| `--create-only` | Create a new migration but do not apply it |
-| `--schema` | Custom path to your Prisma schema |
-| `--config` | Custom path to your Prisma config file |
-| `--url` | Override the datasource URL from the Prisma config file |
+| Option          | Description                                             |
+| --------------- | ------------------------------------------------------- |
+| `--name` / `-n` | Name the migration                                      |
+| `--create-only` | Create a new migration but do not apply it              |
+| `--schema`      | Custom path to your Prisma schema                       |
+| `--config`      | Custom path to your Prisma config file                  |
+| `--url`         | Override the datasource URL from the Prisma config file |
 
 ### Follow-up Commands
 
@@ -106,7 +106,7 @@ Do you want to reset your database? All data will be lost.
 ### After schema changes
 
 ```prisma
-// schema.prisma - Add new field
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -136,10 +136,10 @@ prisma migrate dev --name remove_field
 ```typescript
 export default defineConfig({
   datasource: {
-    url: env('DATABASE_URL'),
-    shadowDatabaseUrl: env('SHADOW_DATABASE_URL'),
+    url: env("DATABASE_URL"),
+    shadowDatabaseUrl: env("SHADOW_DATABASE_URL"),
   },
-})
+});
 ```
 
 For local Prisma Postgres (`prisma dev`), shadow database is handled automatically.

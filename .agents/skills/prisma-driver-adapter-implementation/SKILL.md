@@ -192,14 +192,14 @@ class MyQueryable<TClient> implements SqlQueryable {
         mapArg(arg, query.argTypes[i] ?? { scalarType: "unknown", arity: "scalar" })
       );
 
-      // Execute query with your driver
+
       const result = await this.client.query(query.sql, args);
 
-      // Extract column metadata
+
       const columnNames = /* get from result */;
       const columnTypes = /* map to ColumnTypeEnum */;
 
-      // Map rows to ResultValue arrays
+
       const rows = result.map(row => mapRow(row, columnTypes));
 
       return { columnNames, columnTypes, rows };
@@ -246,13 +246,11 @@ class MyTransaction extends MyQueryable<TClient> implements Transaction {
   }
 
   commit(): Promise<void> {
-    // DO NOT issue COMMIT SQL here — Prisma does it via executeRaw
     this.#release(); // Release connection/resources
     return Promise.resolve();
   }
 
   rollback(): Promise<void> {
-    // DO NOT issue ROLLBACK SQL here — Prisma does it via executeRaw
     this.#release();
     return Promise.resolve();
   }
@@ -270,10 +268,7 @@ class MyAdapter extends MyQueryable<TClient> implements SqlDriverAdapter {
   }
 
   async executeScript(script: string): Promise<void> {
-    // For SQLite: split on ';' and run each statement
-    // For Postgres: use multi-statement execution
     try {
-      // Implementation depends on driver capabilities
     } catch (e) {
       this.onError(e);
     }
@@ -282,7 +277,6 @@ class MyAdapter extends MyQueryable<TClient> implements SqlDriverAdapter {
   async startTransaction(
     isolationLevel?: IsolationLevel,
   ): Promise<Transaction> {
-    // Validate isolation level for your database
     const validLevels = new Set<IsolationLevel>([
       "READ UNCOMMITTED",
       "READ COMMITTED",
@@ -304,13 +298,11 @@ class MyAdapter extends MyQueryable<TClient> implements SqlDriverAdapter {
 
     try {
       if (depth === 1) {
-        // Issue BEGIN (with isolation level if specified)
         const beginSql = isolationLevel
           ? `BEGIN ISOLATION LEVEL ${isolationLevel}`
           : "BEGIN";
         await this.client.query(beginSql);
       } else {
-        // Nested: use savepoints
         await this.client.query(`SAVEPOINT sp_${depth}`);
       }
     } catch (e) {
@@ -375,23 +367,23 @@ Convert Prisma argument values to driver-native types:
 function mapArg(arg: unknown, argType: ArgType): unknown {
   if (arg === null || arg === undefined) return null;
 
-  // String → number for int columns
+
   if (typeof arg === "string" && argType.scalarType === "int")
     return Number.parseInt(arg, 10);
 
-  // String → number for float columns
+
   if (typeof arg === "string" && argType.scalarType === "float")
     return Number.parseFloat(arg);
 
-  // String → BigInt for bigint columns
+
   if (typeof arg === "string" && argType.scalarType === "bigint")
     return BigInt(arg);
 
-  // Base64 string → Buffer for bytes columns
+
   if (typeof arg === "string" && argType.scalarType === "bytes")
     return Buffer.from(arg, "base64");
 
-  // Boolean → 0/1 for SQLite
+
   if (typeof arg === "boolean" && /* SQLite */)
     return arg ? 1 : 0;
 
@@ -416,19 +408,16 @@ function mapRow(row: unknown[], columnTypes: ColumnType[]): ResultValue[] {
       continue;
     }
 
-    // bigint → string for Int64 (JSON-safe)
     if (typeof value === "bigint") {
       result.push(value.toString());
       continue;
     }
 
-    // Date → ISO 8601 string for DateTime
     if (value instanceof Date) {
       result.push(value.toISOString());
       continue;
     }
 
-    // JSON objects → stringified
     if (colType === ColumnTypeEnum.Json && typeof value === "object") {
       result.push(JSON.stringify(value));
       continue;
@@ -465,10 +454,8 @@ Map driver errors to `MappedError` for Prisma to handle correctly:
 ```typescript
 function convertDriverError(error: unknown): MappedError {
   if (error instanceof Error) {
-    // Database-specific error mapping
     const dbError = error as Error & { code?: string; errno?: number };
 
-    // PostgreSQL example
     if (dbError.code === "23505") {
       return { kind: "UniqueConstraintViolation" };
     }
@@ -482,7 +469,6 @@ function convertDriverError(error: unknown): MappedError {
       return { kind: "TableDoesNotExist" };
     }
 
-    // SQLite example
     if (error.name === "SQLiteError") {
       return {
         kind: "sqlite",
@@ -491,7 +477,6 @@ function convertDriverError(error: unknown): MappedError {
       };
     }
 
-    // PostgreSQL raw error
     if (dbError.code) {
       return {
         kind: "postgres",
@@ -562,10 +547,9 @@ describe("startTransaction", () => {
       args: ["Alice"],
       argTypes: [],
     });
-    // Prisma sends COMMIT via executeRaw
+
     await tx.executeRaw({ sql: "COMMIT", args: [], argTypes: [] });
     await tx.commit(); // lifecycle hook only
-    // Verify data persisted
   });
 });
 ```
@@ -616,7 +600,6 @@ const factory = new MyAdapterFactory({
 
 const prisma = new PrismaClient({ adapter: factory });
 
-// Use prisma normally
 const users = await prisma.user.findMany();
 ```
 
