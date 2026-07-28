@@ -1,13 +1,25 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Search, Plus, Trash2, Edit3, AlertTriangle, X } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  Search,
+  Plus,
+  Trash2,
+  Edit3,
+  AlertTriangle,
+  X,
+  ImagePlus,
+  Camera,
+  ShoppingCart,
+  Package,
+} from "lucide-react";
 
 interface Item {
   id: string;
   name: string;
   category: string | null;
   amount: string | null;
+  imageUrl: string | null;
   expireDate: string;
   createdAt: string;
 }
@@ -24,11 +36,21 @@ const CATEGORIES = [
   "Other",
 ];
 
+type StockFilter = "all" | "in-stock" | "out-of-stock";
+
+function isOutOfStock(amount: string | null): boolean {
+  if (!amount) return false;
+  const match = amount.match(/^(\d+(?:\.\d+)?)/);
+  if (!match) return false;
+  return parseFloat(match[1]) === 0;
+}
+
 export default function ItemsView() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -45,6 +67,13 @@ export default function ItemsView() {
   });
   const [createSaving, setCreateSaving] = useState(false);
   const [createError, setCreateError] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
+  const [createImagePreview, setCreateImagePreview] = useState<string | null>(
+    null,
+  );
+  const previewUrlRef = useRef<string | null>(null);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -63,6 +92,15 @@ export default function ItemsView() {
 
   useEffect(() => {
     fetchItems();
+  }, [fetchItems]);
+
+  useEffect(() => {
+    const handleFridgeUpdate = () => {
+      fetchItems();
+    };
+    window.addEventListener("fridge-items-updated", handleFridgeUpdate);
+    return () =>
+      window.removeEventListener("fridge-items-updated", handleFridgeUpdate);
   }, [fetchItems]);
 
   const handleDelete = async (id: string) => {
@@ -110,6 +148,51 @@ export default function ItemsView() {
     }
   };
 
+  const handleImageSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        setCreateError("Please select a valid image file.");
+        return;
+      }
+
+      const MAX_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        setCreateError("Image is too large (max 5MB).");
+        return;
+      }
+
+      if (previewUrlRef.current && !previewUrlRef.current.startsWith("http")) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+      const url = URL.createObjectURL(file);
+      previewUrlRef.current = url;
+      setCreateImageFile(file);
+      setCreateImagePreview(url);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [],
+  );
+
+  const removeFormImage = useCallback(() => {
+    if (previewUrlRef.current && !previewUrlRef.current.startsWith("http")) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+    previewUrlRef.current = null;
+    setCreateImageFile(null);
+    setCreateImagePreview(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current && !previewUrlRef.current.startsWith("http")) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.name.trim() || !createForm.expireDate) {
@@ -120,6 +203,26 @@ export default function ItemsView() {
     setCreateError("");
 
     try {
+      let imageUrl: string | null = null;
+
+      if (createImageFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", createImageFile);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          throw new Error(err.error ?? "Image upload failed");
+        }
+
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.urls?.[0] ?? null;
+      }
+
       const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,6 +230,7 @@ export default function ItemsView() {
           name: createForm.name.trim(),
           category: createForm.category || null,
           amount: createForm.amount || null,
+          imageUrl,
           expireDate: createForm.expireDate,
         }),
       });
@@ -140,6 +244,7 @@ export default function ItemsView() {
       setItems((prev) => [item, ...prev]);
       setShowCreateModal(false);
       setCreateForm({ name: "", category: "", amount: "", expireDate: "" });
+      removeFormImage();
     } catch (err) {
       setCreateError(
         err instanceof Error ? err.message : "An unexpected error occurred.",
@@ -155,28 +260,50 @@ export default function ItemsView() {
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
-  const getStatusBadge = (expireDate: string) => {
+  const getStatusBadge = (expireDate: string, amount: string | null) => {
+    if (isOutOfStock(amount)) {
+      return {
+        label: "Out of Stock",
+        class: "bg-red-50 text-red-700 border-red-200",
+        icon: ShoppingCart,
+      };
+    }
+
     const days = getDaysLeft(expireDate);
     if (days < 0)
       return {
         label: "Expired",
         class: "bg-red-50 text-red-700 border-red-100",
+        icon: AlertTriangle,
       };
     if (days <= 3)
       return {
         label: `${days}d left`,
         class: "bg-amber-50 text-amber-700 border-amber-100",
+        icon: AlertTriangle,
       };
     if (days <= 7)
       return {
         label: `${days}d left`,
         class: "bg-yellow-50 text-yellow-700 border-yellow-100",
+        icon: null,
       };
     return {
       label: `${days}d left`,
       class: "bg-green-50 text-green-700 border-green-100",
+      icon: null,
     };
   };
+
+  const filteredItems = items.filter((item) => {
+    if (stockFilter === "out-of-stock") return isOutOfStock(item.amount);
+    if (stockFilter === "in-stock") return !isOutOfStock(item.amount);
+    return true;
+  });
+
+  const outOfStockCount = items.filter((item) =>
+    isOutOfStock(item.amount),
+  ).length;
 
   return (
     <div className="p-8">
@@ -193,6 +320,47 @@ export default function ItemsView() {
         >
           <Plus className="h-4 w-4" />
           Add Item
+        </button>
+      </div>
+
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          onClick={() => setStockFilter("all")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 ${
+            stockFilter === "all"
+              ? "bg-zinc-900 text-white shadow-sm"
+              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+          }`}
+        >
+          <Package className="h-3.5 w-3.5" />
+          All Items
+        </button>
+        <button
+          onClick={() => setStockFilter("in-stock")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 ${
+            stockFilter === "in-stock"
+              ? "bg-zinc-900 text-white shadow-sm"
+              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+          }`}
+        >
+          <Package className="h-3.5 w-3.5" />
+          In Stock
+        </button>
+        <button
+          onClick={() => setStockFilter("out-of-stock")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 ${
+            stockFilter === "out-of-stock"
+              ? "bg-zinc-900 text-white shadow-sm"
+              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+          } ${outOfStockCount > 0 && stockFilter !== "out-of-stock" ? "border-red-200 text-red-600" : ""}`}
+        >
+          <ShoppingCart className="h-3.5 w-3.5" />
+          Out of Stock
+          {outOfStockCount > 0 && (
+            <span className="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
+              {outOfStockCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -230,20 +398,28 @@ export default function ItemsView() {
             />
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white py-16 text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100">
-            <AlertTriangle className="h-6 w-6 text-zinc-400" />
+            {stockFilter === "out-of-stock" ? (
+              <ShoppingCart className="h-6 w-6 text-zinc-400" />
+            ) : (
+              <AlertTriangle className="h-6 w-6 text-zinc-400" />
+            )}
           </div>
           <h3 className="text-base font-medium text-zinc-900">
-            No items found
+            {stockFilter === "out-of-stock"
+              ? "No out-of-stock items"
+              : "No items found"}
           </h3>
           <p className="mt-1 text-sm text-zinc-500">
-            {search || categoryFilter
-              ? "Try adjusting your search or filters."
-              : "Your fridge is empty. Start adding items!"}
+            {stockFilter === "out-of-stock"
+              ? "Everything is in stock! Items you run out of will appear here."
+              : search || categoryFilter
+                ? "Try adjusting your search or filters."
+                : "Your fridge is empty. Start adding items!"}
           </p>
-          {!search && !categoryFilter && (
+          {!search && !categoryFilter && stockFilter !== "out-of-stock" && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
@@ -259,7 +435,7 @@ export default function ItemsView() {
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50">
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                  Name
+                  Item
                 </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Category
@@ -268,7 +444,7 @@ export default function ItemsView() {
                   Amount
                 </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                  Expires
+                  Status
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Actions
@@ -276,17 +452,35 @@ export default function ItemsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {items.map((item) => {
-                const badge = getStatusBadge(item.expireDate);
+              {filteredItems.map((item) => {
+                const badge = getStatusBadge(item.expireDate, item.amount);
+                const isZeroStock = isOutOfStock(item.amount);
                 return (
                   <tr
                     key={item.id}
-                    className="transition-colors hover:bg-zinc-50"
+                    className={`transition-colors hover:bg-zinc-50 ${
+                      isZeroStock ? "bg-red-50/30" : ""
+                    }`}
                   >
                     <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-zinc-900">
-                        {item.name}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        {item.imageUrl ? (
+                          <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50">
+                            <Package className="h-4 w-4 text-zinc-400" />
+                          </div>
+                        )}
+                        <p className="text-sm font-medium text-zinc-900">
+                          {item.name}
+                        </p>
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       {item.category ? (
@@ -298,14 +492,17 @@ export default function ItemsView() {
                       )}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="text-sm text-zinc-600">
+                      <span
+                        className={`text-sm ${isZeroStock ? "text-red-400 line-through" : "text-zinc-600"}`}
+                      >
                         {item.amount ?? "—"}
                       </span>
                     </td>
                     <td className="px-5 py-4">
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${badge.class}`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${badge.class}`}
                       >
+                        {badge.icon && <badge.icon className="h-3 w-3" />}
                         {badge.label}
                       </span>
                     </td>
@@ -348,7 +545,10 @@ export default function ItemsView() {
                 </p>
               </div>
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => {
+                  removeFormImage();
+                  setShowCreateModal(false);
+                }}
                 className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -374,6 +574,68 @@ export default function ItemsView() {
                     setCreateForm({ ...createForm, name: e.target.value })
                   }
                   className="w-full rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
+                  Photo
+                </label>
+                {createImagePreview ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={createImagePreview}
+                      alt="Item preview"
+                      className="h-28 w-28 rounded-lg object-cover border border-zinc-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeFormImage}
+                      className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-white shadow-md hover:bg-red-600 transition-colors"
+                      title="Remove image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.removeAttribute("capture");
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition-colors"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      Browse Gallery
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.setAttribute(
+                            "capture",
+                            "environment",
+                          );
+                          fileInputRef.current.click();
+                        }
+                      }}
+                      className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition-colors"
+                    >
+                      <Camera className="h-4 w-4" />
+                      Take Photo
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelect}
                 />
               </div>
 
@@ -430,7 +692,10 @@ export default function ItemsView() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    removeFormImage();
+                    setShowCreateModal(false);
+                  }}
                   className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
                 >
                   Cancel

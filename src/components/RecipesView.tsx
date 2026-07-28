@@ -8,10 +8,17 @@ import {
   ChefHat,
   X,
   ImagePlus,
-  Maximize2,
+  CookingPot,
+  Minus,
+  Check,
+  AlertCircle,
+  Loader2,
+  ShoppingCart,
+  Package,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { showToast } from "@/components/ToastContainer";
 
 interface Recipe {
   id: string;
@@ -21,6 +28,23 @@ interface Recipe {
   instructions: string;
   imageUrl?: string | null;
   createdAt: string;
+}
+
+interface FridgeItem {
+  id: string;
+  name: string;
+  category: string | null;
+  amount: string | null;
+  imageUrl: string | null;
+  expireDate: string;
+}
+
+interface IngredientMatch {
+  ingredientLine: string;
+  ingredientName: string;
+  quantity: number;
+  matchedItem: FridgeItem | null;
+  deductAmount: number;
 }
 
 function Lightbox({
@@ -88,6 +112,42 @@ function Lightbox({
   );
 }
 
+/** Parse a quantity number from the start of a string, e.g. "2 cups" -> 2 */
+function parseQuantity(text: string): number {
+  const match = text.trim().match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*/);
+  if (!match) return 1;
+  const raw = match[1];
+  if (raw.includes("/")) {
+    const [num, den] = raw.split("/").map(Number);
+    return den ? num / den : num;
+  }
+  return parseFloat(raw) || 1;
+}
+
+/** Parse the ingredient name from a line, removing leading quantity and unit */
+function parseIngredientName(line: string): string {
+  const trimmed = line.trim();
+
+  const cleaned = trimmed
+    .replace(/^[\d\s./]+/, "") // remove leading numbers
+    .replace(
+      /^(cup|cups|tbsp|tsp|oz|lb|lbs|g|kg|ml|l|pint|pints|quart|quarts|gallon|gallons|piece|pieces|slice|slices|clove|cloves|pack|packs|can|cans|bunch|bunches|head|heads|sprig|sprigs|dash|pinch|to taste)\s+/i,
+      "",
+    )
+    .replace(/^of\s+/i, "")
+    .replace(/,\s*.*$/, "") // remove anything after a comma (prep notes)
+    .trim();
+  return cleaned || trimmed;
+}
+
+/** Clean ingredient name for matching against fridge items */
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim();
+}
+
 export default function RecipesView() {
   const { user } = useUser();
   const router = useRouter();
@@ -108,6 +168,14 @@ export default function RecipesView() {
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const [cookingRecipe, setCookingRecipe] = useState<Recipe | null>(null);
+  const [cookingMatches, setCookingMatches] = useState<IngredientMatch[]>([]);
+  const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
+  const [cookingLoading, setCookingLoading] = useState(false);
+  const [cookingSaving, setCookingSaving] = useState(false);
+  const [cookingError, setCookingError] = useState("");
+  const [cookingSuccess, setCookingSuccess] = useState(false);
 
   const fetchRecipes = async (query = "") => {
     try {
@@ -257,6 +325,130 @@ export default function RecipesView() {
       router.push(`/user/${user.id}`);
     }
   };
+
+  const openCookModal = useCallback(async (recipe: Recipe) => {
+    setCookingRecipe(recipe);
+    setCookingSuccess(false);
+    setCookingError("");
+    setCookingLoading(true);
+
+    try {
+      const res = await fetch("/api/items");
+      if (!res.ok) throw new Error("Failed to fetch fridge items");
+      const items: FridgeItem[] = await res.json();
+      setFridgeItems(items);
+
+      const ingredientLines = recipe.ingredients
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+
+      const matches: IngredientMatch[] = ingredientLines.map((line) => {
+        const ingredientName = parseIngredientName(line);
+        const quantity = parseQuantity(line);
+        const normalizedIngredient = normalizeName(ingredientName);
+
+        const matchedItem =
+          items.find((item) => {
+            const normalizedItem = normalizeName(item.name);
+            return (
+              normalizedItem.includes(normalizedIngredient) ||
+              normalizedIngredient.includes(normalizedItem)
+            );
+          }) ?? null;
+
+        return {
+          ingredientLine: line,
+          ingredientName,
+          quantity,
+          matchedItem,
+          deductAmount: quantity,
+        };
+      });
+
+      setCookingMatches(matches);
+    } catch (err) {
+      setCookingError(
+        err instanceof Error ? err.message : "Failed to load fridge items",
+      );
+    } finally {
+      setCookingLoading(false);
+    }
+  }, []);
+
+  const updateDeductAmount = useCallback((index: number, newAmount: number) => {
+    setCookingMatches((prev) =>
+      prev.map((m, i) =>
+        i === index ? { ...m, deductAmount: Math.max(0, newAmount) } : m,
+      ),
+    );
+  }, []);
+
+  const closeCookModal = useCallback(() => {
+    setCookingRecipe(null);
+    setCookingMatches([]);
+    setCookingError("");
+    setCookingSuccess(false);
+  }, []);
+
+  const handleCookConfirm = useCallback(async () => {
+    if (!cookingRecipe) return;
+    setCookingSaving(true);
+    setCookingError("");
+
+    try {
+      const deductions = cookingMatches.filter(
+        (m) => m.matchedItem && m.deductAmount > 0,
+      );
+
+      if (deductions.length === 0) {
+        setCookingError(
+          "No ingredients to deduct. Add matching items to your fridge first.",
+        );
+        setCookingSaving(false);
+        return;
+      }
+
+      const res = await fetch("/api/items/deduct", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deductions: deductions.map((d) => ({
+            itemId: d.matchedItem!.id,
+            amountToDeduct: d.deductAmount,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to deduct ingredients");
+      }
+
+      setCookingSuccess(true);
+
+      setTimeout(() => {
+        closeCookModal();
+        const matchedCount = deductions.length;
+        showToast(
+          `Ingredients updated in your fridge! ${matchedCount} item${matchedCount !== 1 ? "s" : ""} deducted.`,
+        );
+
+        window.dispatchEvent(new CustomEvent("fridge-items-updated"));
+      }, 1200);
+    } catch (err) {
+      setCookingError(
+        err instanceof Error ? err.message : "An unexpected error occurred.",
+      );
+    } finally {
+      setCookingSaving(false);
+    }
+  }, [cookingRecipe, cookingMatches, closeCookModal]);
+
+  const matchedCount = cookingMatches.filter(
+    (m) => m.matchedItem && m.deductAmount > 0,
+  ).length;
+  const unmatchedCount = cookingMatches.filter((m) => !m.matchedItem).length;
 
   return (
     <div className="p-8">
@@ -483,7 +675,7 @@ export default function RecipesView() {
           {recipes.map((recipe) => (
             <div
               key={recipe.id}
-              className="group rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-150 hover:shadow-md"
+              className="group flex flex-col rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-150 hover:shadow-md"
             >
               {recipe.imageUrl && (
                 <button
@@ -498,7 +690,7 @@ export default function RecipesView() {
                 </button>
               )}
 
-              <div className="p-5">
+              <div className="flex flex-1 flex-col p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -530,6 +722,16 @@ export default function RecipesView() {
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="mt-auto pt-4">
+                  <button
+                    onClick={() => openCookModal(recipe)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-zinc-800"
+                  >
+                    <CookingPot className="h-4 w-4" />
+                    Cook & Use Ingredients
                   </button>
                 </div>
 
@@ -574,6 +776,217 @@ export default function RecipesView() {
           initialIndex={0}
           onClose={() => setLightboxImage(null)}
         />
+      )}
+
+      {cookingRecipe && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900">
+                  <CookingPot className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-900">
+                    Cook: {cookingRecipe.title}
+                  </h3>
+                  <p className="text-xs text-zinc-500">
+                    Match ingredients with your fridge and deduct quantities
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeCookModal}
+                className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
+                disabled={cookingSaving}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {cookingSuccess ? (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-green-200 bg-green-50 p-5 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <Check className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h4 className="text-base font-semibold text-green-800">
+                    Cooking Complete!
+                  </h4>
+                  <p className="mt-1 text-sm text-green-600">
+                    {matchedCount} ingredient{matchedCount !== 1 ? "s" : ""}{" "}
+                    deducted from your fridge.
+                    {unmatchedCount > 0 &&
+                      ` ${unmatchedCount} ingredient${unmatchedCount !== 1 ? "s" : ""} could not be matched.`}
+                  </p>
+                  <p className="mt-2 text-xs text-green-500 animate-pulse">
+                    Closing automatically...
+                  </p>
+                </div>
+              </div>
+            ) : cookingLoading ? (
+              <div className="flex flex-col items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+                <p className="mt-3 text-sm text-zinc-500">
+                  Checking your fridge...
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {cookingError && (
+                  <div className="flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{cookingError}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 rounded-lg bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
+                  <span className="flex items-center gap-1">
+                    <Package className="h-3.5 w-3.5 text-green-600" />
+                    <span>
+                      <strong className="text-zinc-800">{matchedCount}</strong>{" "}
+                      matched
+                    </span>
+                  </span>
+                  {unmatchedCount > 0 && (
+                    <span className="flex items-center gap-1">
+                      <ShoppingCart className="h-3.5 w-3.5 text-amber-600" />
+                      <span>
+                        <strong className="text-zinc-800">
+                          {unmatchedCount}
+                        </strong>{" "}
+                        no match
+                      </span>
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <ChefHat className="h-3.5 w-3.5 text-zinc-400" />
+                    <span>
+                      <strong className="text-zinc-800">
+                        {cookingMatches.length}
+                      </strong>{" "}
+                      total ingredients
+                    </span>
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {cookingMatches.map((match, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-lg border p-3 transition-all ${
+                        match.matchedItem
+                          ? "border-zinc-200 bg-white"
+                          : "border-amber-200 bg-amber-50/50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {match.matchedItem ? (
+                              match.matchedItem.imageUrl ? (
+                                <img
+                                  src={match.matchedItem.imageUrl}
+                                  alt=""
+                                  className="h-7 w-7 flex-shrink-0 rounded border border-zinc-200 object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-zinc-200 bg-zinc-50">
+                                  <Package className="h-3.5 w-3.5 text-zinc-400" />
+                                </div>
+                              )
+                            ) : (
+                              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-amber-200 bg-amber-100">
+                                <ShoppingCart className="h-3.5 w-3.5 text-amber-600" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-zinc-800 truncate">
+                                {match.ingredientLine}
+                              </p>
+                              {match.matchedItem ? (
+                                <p className="text-xs text-green-600 truncate">
+                                  ↔ {match.matchedItem.name}
+                                  {match.matchedItem.amount &&
+                                    ` (${match.matchedItem.amount})`}
+                                </p>
+                              ) : (
+                                <p className="text-xs text-amber-600">
+                                  No matching item in fridge
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {match.matchedItem && (
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateDeductAmount(
+                                  idx,
+                                  Math.max(0, match.deductAmount - 1),
+                                )
+                              }
+                              disabled={
+                                match.deductAmount <= 0 || cookingSaving
+                              }
+                              className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 hover:bg-zinc-100 disabled:opacity-30 transition-colors"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-semibold text-zinc-900 tabular-nums">
+                              {match.deductAmount}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateDeductAmount(idx, match.deductAmount + 1)
+                              }
+                              disabled={cookingSaving}
+                              className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 hover:bg-zinc-100 transition-colors"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2 border-t border-zinc-100">
+                  <button
+                    onClick={closeCookModal}
+                    disabled={cookingSaving}
+                    className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCookConfirm}
+                    disabled={matchedCount === 0 || cookingSaving}
+                    className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {cookingSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Cooking...
+                      </>
+                    ) : (
+                      <>
+                        <CookingPot className="h-4 w-4" />
+                        Confirm & Cook
+                        {matchedCount > 0 && ` (${matchedCount})`}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

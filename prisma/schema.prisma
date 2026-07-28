@@ -28,6 +28,7 @@ model Item {
   name       String
   category   String?
   amount     String?
+  imageUrl   String?
   expireDate DateTime
   notified   Boolean  @default(false)
 

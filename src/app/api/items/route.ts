@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const userId = await ensureUser();
     const body = await req.json();
 
-    const { name, category, amount, expireDate } = body;
+    const { name, category, amount, imageUrl, expireDate } = body;
 
     if (!name || !expireDate) {
       return NextResponse.json(
@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
         name,
         category: category ?? null,
         amount: amount ?? null,
+        imageUrl: imageUrl ?? null,
         expireDate: new Date(expireDate),
       },
     });
@@ -81,7 +82,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const userId = await ensureUser();
     const body = await req.json();
-    const { id, name, category, amount, expireDate } = body;
+    const { id, name, category, amount, imageUrl, expireDate } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -101,6 +102,7 @@ export async function PATCH(req: NextRequest) {
         ...(name !== undefined && { name }),
         ...(category !== undefined && { category }),
         ...(amount !== undefined && { amount }),
+        ...(imageUrl !== undefined && { imageUrl: imageUrl ?? null }),
         ...(expireDate !== undefined && { expireDate: new Date(expireDate) }),
       },
     });
