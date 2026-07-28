@@ -54,6 +54,10 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
   const router = useRouter();
 
   const handleClick = (item: (typeof navItems)[number]) => {
+    if (item.view === "profile" && user?.id) {
+      router.push(`/user/${user.id}`);
+      return;
+    }
     if (item.isRoute && item.href) {
       router.push(item.href);
     } else if (onViewChange) {
@@ -64,6 +68,9 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
   };
 
   const isActive = (item: (typeof navItems)[number]) => {
+    if (item.view === "profile" && user?.id) {
+      return pathname === `/user/${user.id}`;
+    }
     if (item.isRoute && item.href) {
       return pathname.startsWith(item.href);
     }
@@ -135,7 +142,7 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
               </p>
             </div>
           </button>
-          <SignOutButton>
+          <SignOutButton redirectUrl="/">
             <button
               type="button"
               className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"

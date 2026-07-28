@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   Send,
   Bot,
@@ -63,25 +64,12 @@ const SUGGESTIONS = [
   "What's a good recipe for leftover ingredients?",
 ];
 
-const STORAGE_KEY = "ai-fridge-chat-sessions";
+function getStorageKey(userId?: string | null): string {
+  return userId ? `ai-fridge-chat-sessions-${userId}` : "ai-fridge-chat-sessions";
+}
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function loadSessions(): ChatSession[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveSessions(sessions: ChatSession[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-  } catch {}
 }
 
 function generateTitle(messages: ChatMessage[]): string {
@@ -106,6 +94,27 @@ export default function AIView({
   initialPrompt?: string | null;
   onPromptSent?: () => void;
 }) {
+  const { user } = useUser();
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
+
+  const loadSessions = useCallback((): ChatSession[] => {
+    try {
+      const key = getStorageKey(userIdRef.current);
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const saveSessions = useCallback((sessions: ChatSession[]) => {
+    try {
+      const key = getStorageKey(userIdRef.current);
+      localStorage.setItem(key, JSON.stringify(sessions));
+    } catch {}
+  }, []);
+
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING_MESSAGE]);
@@ -157,7 +166,7 @@ export default function AIView({
     if (sessions.length > 0) {
       saveSessions(sessions);
     }
-  }, [sessions]);
+  }, [sessions, saveSessions]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -258,7 +267,7 @@ export default function AIView({
         }
       }
     },
-    [activeSessionId, sessions],
+    [activeSessionId, sessions, saveSessions],
   );
 
   const handleSend = useCallback(

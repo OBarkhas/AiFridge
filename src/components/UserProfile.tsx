@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toggleLike, toggleRecipeVisibility } from "@/app/actions/community";
 import CommentSection from "@/components/community/CommentSection";
@@ -13,6 +13,10 @@ import {
   Globe,
   Lock,
   FileText,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
 } from "lucide-react";
 
 interface User {
@@ -26,6 +30,7 @@ interface RecipeData {
   id: string;
   title: string;
   description: string | null;
+  imageUrl?: string | null;
   isPublic: boolean;
 }
 
@@ -44,6 +49,116 @@ function formatJoinDate(date: Date): string {
   });
 }
 
+function Lightbox({
+  images,
+  initialIndex,
+  onClose,
+}: {
+  images: string[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [index, setIndex] = useState(initialIndex);
+
+  const goPrev = useCallback(() => {
+    setIndex((i) => (i === 0 ? images.length - 1 : i - 1));
+  }, [images.length]);
+
+  const goNext = useCallback(() => {
+    setIndex((i) => (i === images.length - 1 ? 0 : i + 1));
+  }, [images.length]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose, goPrev, goNext]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+        title="Close (Esc)"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      {images.length > 1 && (
+        <div className="absolute top-4 left-4 z-10 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white">
+          {index + 1} / {images.length}
+        </div>
+      )}
+
+      {images.length > 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            goPrev();
+          }}
+          className="absolute left-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+          title="Previous"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+      )}
+
+      <img
+        src={images[index]}
+        alt={`Full size ${index + 1}`}
+        className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {images.length > 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            goNext();
+          }}
+          className="absolute right-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+          title="Next"
+        >
+          <ChevronRight className="h-6 w-6" />
+        </button>
+      )}
+
+      {images.length > 1 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIndex(i);
+              }}
+              className={`h-2.5 rounded-full transition-all ${
+                i === index
+                  ? "w-8 bg-white"
+                  : "w-2.5 bg-white/40 hover:bg-white/70"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RecipeCard({
   recipe,
   isOwnProfile,
@@ -54,6 +169,7 @@ function RecipeCard({
   onToggleVisibility: (id: string) => void;
 }) {
   const [toggling, setToggling] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const handleToggle = async () => {
     setToggling(true);
@@ -68,43 +184,66 @@ function RecipeCard({
   };
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <ChefHat className="h-4 w-4 flex-shrink-0 text-zinc-400" />
-            <h3 className="truncate text-sm font-semibold text-zinc-900">
-              {recipe.title}
-            </h3>
+    <>
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              {recipe.imageUrl ? (
+                <button
+                  onClick={() => setLightboxOpen(true)}
+                  className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-200 hover:opacity-90 transition-opacity"
+                >
+                  <img
+                    src={recipe.imageUrl}
+                    alt={recipe.title}
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ) : (
+                <ChefHat className="h-4 w-4 flex-shrink-0 text-zinc-400" />
+              )}
+              <h3 className="truncate text-sm font-semibold text-zinc-900">
+                {recipe.title}
+              </h3>
+            </div>
+            {recipe.description && (
+              <p className="mt-1.5 line-clamp-2 text-xs text-zinc-500">
+                {recipe.description}
+              </p>
+            )}
           </div>
-          {recipe.description && (
-            <p className="mt-1.5 line-clamp-2 text-xs text-zinc-500">
-              {recipe.description}
-            </p>
+          {isOwnProfile && (
+            <button
+              onClick={handleToggle}
+              disabled={toggling}
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                recipe.isPublic
+                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                  : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100"
+              }`}
+            >
+              {toggling ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : recipe.isPublic ? (
+                <Globe className="h-3 w-3" />
+              ) : (
+                <Lock className="h-3 w-3" />
+              )}
+              {recipe.isPublic ? "Public" : "Private"}
+            </button>
           )}
         </div>
-        {isOwnProfile && (
-          <button
-            onClick={handleToggle}
-            disabled={toggling}
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-colors ${
-              recipe.isPublic
-                ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-                : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100"
-            }`}
-          >
-            {toggling ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : recipe.isPublic ? (
-              <Globe className="h-3 w-3" />
-            ) : (
-              <Lock className="h-3 w-3" />
-            )}
-            {recipe.isPublic ? "Public" : "Private"}
-          </button>
-        )}
       </div>
-    </div>
+
+      {lightboxOpen && recipe.imageUrl && (
+        <Lightbox
+          images={[recipe.imageUrl]}
+          initialIndex={0}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -121,6 +260,7 @@ function ProfilePostCard({
     post.likes.some((l) => l.userId === currentUserId),
   );
   const [localLikeCount, setLocalLikeCount] = useState(post.likes.length);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const router = useRouter();
 
   const handleLike = async () => {
@@ -139,82 +279,112 @@ function ProfilePostCard({
     }
   };
 
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
-      <div className="px-4 py-3">
-        <p className="whitespace-pre-wrap text-sm text-zinc-800">
-          {post.content}
-        </p>
-      </div>
+  const images = post.imageUrls ?? [];
 
-      {post.imageUrls && post.imageUrls.length > 0 && (
-        <div className="border-y border-zinc-100">
-          <div className="aspect-[4/3] overflow-hidden bg-zinc-100">
-            <img
-              src={post.imageUrls[0]}
-              alt="Post image"
-              className="h-full w-full object-cover"
+  return (
+    <>
+      <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div className="px-4 py-3">
+          <p className="whitespace-pre-wrap text-sm text-zinc-800">
+            {post.content}
+          </p>
+        </div>
+
+        {images.length > 0 && (
+          <div className="border-y border-zinc-100 px-4 py-3">
+            <div className="flex flex-wrap gap-2">
+              {images.map((url, i) => (
+                <button
+                  key={i}
+                  onClick={() => setLightboxIndex(i)}
+                  className="group relative h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 hover:opacity-90 transition-opacity"
+                >
+                  <img
+                    src={url}
+                    alt={`Post image ${i + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  {images.length > 1 && i === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+                      <Maximize2 className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            {images.length > 1 && (
+              <p className="mt-1.5 text-[10px] text-zinc-400 tabular-nums">
+                {images.length} {images.length === 1 ? "photo" : "photos"}
+              </p>
+            )}
+          </div>
+        )}
+
+        {post.recipes && post.recipes.length > 0 && (
+          <div className="mx-4 mb-2 grid gap-2 sm:grid-cols-2">
+            {post.recipes.map((recipe) => (
+              <div
+                key={recipe.id}
+                className="rounded-lg border border-zinc-200 bg-zinc-50 p-3"
+              >
+                <div className="flex items-center gap-2">
+                  {recipe.imageUrl ? (
+                    <img
+                      src={recipe.imageUrl}
+                      alt={recipe.title}
+                      className="h-8 w-8 flex-shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <ChefHat className="h-4 w-4 flex-shrink-0 text-zinc-500" />
+                  )}
+                  <span className="text-xs font-medium text-zinc-700 truncate">
+                    {recipe.title}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 border-t border-zinc-100 px-4 py-2">
+          <button
+            onClick={handleLike}
+            disabled={isLiking}
+            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+              localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500"
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${localLiked ? "fill-red-500" : ""}`} />
+            {localLikeCount > 0 && <span>{localLikeCount}</span>}
+          </button>
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+          >
+            <MessageCircle className="h-4 w-4" />
+            {post.comments.length > 0 && <span>{post.comments.length}</span>}
+          </button>
+        </div>
+
+        {showComments && (
+          <div className="border-t border-zinc-100 px-4 py-3">
+            <CommentSection
+              postId={post.id}
+              comments={post.comments}
+              currentUserId={currentUserId}
             />
           </div>
-          {post.imageUrls.length > 1 && (
-            <div className="flex items-center justify-center gap-1 border-t border-zinc-100 py-1.5">
-              <span className="text-[10px] text-zinc-400">
-                +{post.imageUrls.length - 1} more photo
-                {post.imageUrls.length - 1 > 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {post.recipes && post.recipes.length > 0 && (
-        <div className="mx-4 mb-2 grid gap-2 sm:grid-cols-2">
-          {post.recipes.map((recipe) => (
-            <div
-              key={recipe.id}
-              className="rounded-lg border border-zinc-200 bg-zinc-50 p-3"
-            >
-              <div className="flex items-center gap-2">
-                <ChefHat className="h-4 w-4 flex-shrink-0 text-zinc-500" />
-                <span className="text-xs font-medium text-zinc-700 truncate">
-                  {recipe.title}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center gap-4 border-t border-zinc-100 px-4 py-2">
-        <button
-          onClick={handleLike}
-          disabled={isLiking}
-          className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-            localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500"
-          }`}
-        >
-          <Heart className={`h-4 w-4 ${localLiked ? "fill-red-500" : ""}`} />
-          {localLikeCount > 0 && <span>{localLikeCount}</span>}
-        </button>
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
-        >
-          <MessageCircle className="h-4 w-4" />
-          {post.comments.length > 0 && <span>{post.comments.length}</span>}
-        </button>
+        )}
       </div>
 
-      {showComments && (
-        <div className="border-t border-zinc-100 px-4 py-3">
-          <CommentSection
-            postId={post.id}
-            comments={post.comments}
-            currentUserId={currentUserId}
-          />
-        </div>
+      {lightboxIndex !== null && (
+        <Lightbox
+          images={images}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
-    </div>
+    </>
   );
 }
 

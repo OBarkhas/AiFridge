@@ -1,7 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Search, Plus, Trash2, ChefHat, X } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  Search,
+  Plus,
+  Trash2,
+  ChefHat,
+  X,
+  ImagePlus,
+  Maximize2,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 interface Recipe {
   id: string;
@@ -9,21 +19,93 @@ interface Recipe {
   description: string | null;
   ingredients: string;
   instructions: string;
+  imageUrl?: string | null;
   createdAt: string;
 }
 
+function Lightbox({
+  images,
+  initialIndex,
+  onClose,
+}: {
+  images: string[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [index, setIndex] = useState(initialIndex);
+
+  const goPrev = useCallback(() => {
+    setIndex((i) => (i === 0 ? images.length - 1 : i - 1));
+  }, [images.length]);
+
+  const goNext = useCallback(() => {
+    setIndex((i) => (i === images.length - 1 ? 0 : i + 1));
+  }, [images.length]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose, goPrev, goNext]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+        title="Close (Esc)"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      {images.length > 1 && (
+        <div className="absolute top-4 left-4 z-10 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white">
+          {index + 1} / {images.length}
+        </div>
+      )}
+
+      <img
+        src={images[index]}
+        alt={`Full size ${index + 1}`}
+        className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+}
+
 export default function RecipesView() {
+  const { user } = useUser();
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
     ingredients: "",
     instructions: "",
   });
+  const [formImageFile, setFormImageFile] = useState<File | null>(null);
+  const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,6 +125,53 @@ export default function RecipesView() {
     fetchRecipes(search);
   }, [search]);
 
+  const handleImageSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        setError("Please select a valid image file.");
+        return;
+      }
+
+      const MAX_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        setError(`Image is too large (max 5MB).`);
+        return;
+      }
+
+      if (previewUrlRef.current && !previewUrlRef.current.startsWith("http")) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+      const url = URL.createObjectURL(file);
+      previewUrlRef.current = url;
+      setFormImageFile(file);
+      setFormImagePreview(url);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    [],
+  );
+
+  const previewUrlRef = useRef<string | null>(null);
+
+  const removeFormImage = useCallback(() => {
+    if (previewUrlRef.current && !previewUrlRef.current.startsWith("http")) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+    previewUrlRef.current = null;
+    setFormImageFile(null);
+    setFormImagePreview(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current && !previewUrlRef.current.startsWith("http")) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
@@ -57,6 +186,26 @@ export default function RecipesView() {
     setError("");
 
     try {
+      let imageUrl: string | null = null;
+
+      if (formImageFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", formImageFile);
+
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json();
+          throw new Error(err.error ?? "Image upload failed");
+        }
+
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.urls?.[0] ?? null;
+      }
+
       const res = await fetch("/api/recipes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,6 +214,7 @@ export default function RecipesView() {
           description: form.description.trim() || null,
           ingredients: form.ingredients.trim(),
           instructions: form.instructions.trim(),
+          imageUrl,
         }),
       });
 
@@ -82,6 +232,7 @@ export default function RecipesView() {
         ingredients: "",
         instructions: "",
       });
+      removeFormImage();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred.",
@@ -101,6 +252,12 @@ export default function RecipesView() {
     }
   };
 
+  const handleProfileRedirect = () => {
+    if (user?.id) {
+      router.push(`/user/${user.id}`);
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -108,6 +265,13 @@ export default function RecipesView() {
           <h1 className="text-2xl font-semibold text-zinc-900">Recipes</h1>
           <p className="mt-1 text-sm text-zinc-500">
             Save and manage your favorite recipes.
+          </p>
+          <p
+            onClick={handleProfileRedirect}
+            className="mt-1 text-sm text-zinc-400 hover:text-zinc-600 hover:underline cursor-pointer transition-colors"
+          >
+            If you want to let your recipes be seen by others, please edit to
+            public on your profile page.
           </p>
         </div>
         <button
@@ -145,7 +309,10 @@ export default function RecipesView() {
                 </p>
               </div>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  removeFormImage();
+                  setShowForm(false);
+                }}
                 className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -185,12 +352,52 @@ export default function RecipesView() {
                   className="w-full rounded-lg border border-zinc-200 px-3.5 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">
+                  Photo
+                </label>
+                {formImagePreview ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={formImagePreview}
+                      alt="Recipe preview"
+                      className="h-32 w-32 rounded-lg object-cover border border-zinc-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeFormImage}
+                      className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-white shadow-md hover:bg-red-600 transition-colors"
+                      title="Remove image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 rounded-lg border border-zinc-200 px-4 py-2.5 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition-colors"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    Add Photo
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={handleImageSelect}
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1">
                   Ingredients <span className="text-red-400">*</span>
                 </label>
                 <textarea
-                  placeholder="2 cups flour&#10;1 cup sugar&#10;3 eggs"
+                  placeholder={"2 cups flour\n1 cup sugar\n3 eggs"}
                   value={form.ingredients}
                   onChange={(e) =>
                     setForm({ ...form, ingredients: e.target.value })
@@ -204,7 +411,9 @@ export default function RecipesView() {
                   Instructions <span className="text-red-400">*</span>
                 </label>
                 <textarea
-                  placeholder="1. Preheat oven to 350°F&#10;2. Mix dry ingredients&#10;3. Bake for 30 minutes"
+                  placeholder={
+                    "1. Preheat oven to 350°F\n2. Mix dry ingredients\n3. Bake for 30 minutes"
+                  }
                   value={form.instructions}
                   onChange={(e) =>
                     setForm({ ...form, instructions: e.target.value })
@@ -216,7 +425,10 @@ export default function RecipesView() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    removeFormImage();
+                    setShowForm(false);
+                  }}
                   className="rounded-lg border border-zinc-200 px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
                 >
                   Cancel
@@ -273,12 +485,39 @@ export default function RecipesView() {
               key={recipe.id}
               className="group rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-150 hover:shadow-md"
             >
+              {recipe.imageUrl && (
+                <button
+                  onClick={() => setLightboxImage(recipe.imageUrl!)}
+                  className="block w-full aspect-[16/9] overflow-hidden rounded-t-xl bg-zinc-100"
+                >
+                  <img
+                    src={recipe.imageUrl}
+                    alt={recipe.title}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </button>
+              )}
+
               <div className="p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-zinc-900 truncate">
-                      {recipe.title}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      {recipe.imageUrl && (
+                        <button
+                          onClick={() => setLightboxImage(recipe.imageUrl!)}
+                          className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-md bg-zinc-200 hover:opacity-90 transition-opacity"
+                        >
+                          <img
+                            src={recipe.imageUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                      )}
+                      <h3 className="text-base font-semibold text-zinc-900 truncate">
+                        {recipe.title}
+                      </h3>
+                    </div>
                     {recipe.description && (
                       <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
                         {recipe.description}
@@ -327,6 +566,14 @@ export default function RecipesView() {
             </div>
           ))}
         </div>
+      )}
+
+      {lightboxImage && (
+        <Lightbox
+          images={[lightboxImage]}
+          initialIndex={0}
+          onClose={() => setLightboxImage(null)}
+        />
       )}
     </div>
   );

@@ -22,7 +22,7 @@ async function fetchPosts() {
     include: {
       user: { select: { id: true, name: true, imageUrl: true } },
       recipes: {
-        select: { id: true, title: true, description: true },
+        select: { id: true, title: true, description: true, imageUrl: true },
       },
       likes: true,
       comments: {

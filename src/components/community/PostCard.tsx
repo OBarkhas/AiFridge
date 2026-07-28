@@ -25,6 +25,7 @@ export interface PostRecipe {
   id: string;
   title: string;
   description: string | null;
+  imageUrl?: string | null;
 }
 
 export interface PostData {
@@ -43,6 +44,16 @@ interface PostCardProps {
   post: PostData;
   currentUserId: string;
   onRefresh?: () => void;
+}
+
+interface RecipeDetail {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  ingredients: string;
+  instructions: string;
+  imageUrl: string | null;
 }
 
 function timeAgo(date: Date): string {
@@ -149,6 +160,160 @@ function ImageCarousel({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function RecipeDetailModal({
+  recipe,
+  currentUserId,
+  onClose,
+}: {
+  recipe: RecipeDetail;
+  currentUserId: string;
+  onClose: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const isOwnRecipe = recipe.userId === currentUserId;
+
+  const handleAddToMyRecipes = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/recipes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: recipe.title,
+          description: recipe.description,
+          ingredients: recipe.ingredients,
+          instructions: recipe.instructions,
+          imageUrl: recipe.imageUrl,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to save recipe");
+      }
+
+      setSaved(true);
+      setTimeout(() => onClose(), 1500);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to save";
+      alert(`Could not save recipe: ${msg}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-5 py-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <ChefHat className="h-4 w-4 flex-shrink-0 text-zinc-500" />
+            <h2 className="truncate text-base font-semibold text-zinc-900">
+              {recipe.title}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="ml-2 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-5">
+          {recipe.imageUrl && (
+            <div className="overflow-hidden rounded-xl bg-zinc-100">
+              <img
+                src={recipe.imageUrl}
+                alt={recipe.title}
+                className="max-h-64 w-full object-cover"
+              />
+            </div>
+          )}
+
+          {recipe.description && (
+            <p className="text-sm text-zinc-600 leading-relaxed">
+              {recipe.description}
+            </p>
+          )}
+
+          {recipe.ingredients && (
+            <div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Ingredients
+              </h3>
+              <pre className="whitespace-pre-wrap text-sm text-zinc-700 font-sans leading-relaxed">
+                {recipe.ingredients}
+              </pre>
+            </div>
+          )}
+
+          {recipe.instructions && (
+            <div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Instructions
+              </h3>
+              <pre className="whitespace-pre-wrap text-sm text-zinc-700 font-sans leading-relaxed">
+                {recipe.instructions}
+              </pre>
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 border-t border-zinc-100 bg-white px-5 py-3 flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            {!isOwnRecipe && !saved && (
+              <button
+                onClick={handleAddToMyRecipes}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97]"
+              >
+                <ChefHat className="h-3.5 w-3.5" />
+                {saving ? "Saving..." : "Add to My Recipes"}
+              </button>
+            )}
+            {saved && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-xs font-medium text-green-700">
+                <ChefHat className="h-3.5 w-3.5" />
+                Added to your collection!
+              </span>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -277,6 +442,12 @@ export default function PostCard({
   );
   const [localLikeCount, setLocalLikeCount] = useState(post.likes.length);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [recipeLightboxUrl, setRecipeLightboxUrl] = useState<string | null>(
+    null,
+  );
+  const [selectedRecipeDetail, setSelectedRecipeDetail] =
+    useState<RecipeDetail | null>(null);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   const isOwner = post.userId === currentUserId;
   const images = post.imageUrls ?? [];
@@ -382,12 +553,49 @@ export default function PostCard({
               {post.recipes.map((recipe) => (
                 <button
                   key={recipe.id}
-                  onClick={() => router.push(`/?view=recipes`)}
+                  onClick={async () => {
+                    setLoadingRecipe(true);
+                    try {
+                      const res = await fetch(`/api/recipes?id=${recipe.id}`);
+                      if (res.ok) {
+                        const data = await res.json();
+                        setSelectedRecipeDetail(data);
+                      }
+                    } catch {
+                      setSelectedRecipeDetail({
+                        id: recipe.id,
+                        userId: post.userId,
+                        title: recipe.title,
+                        description: recipe.description,
+                        ingredients: "",
+                        instructions: "",
+                        imageUrl: recipe.imageUrl ?? null,
+                      });
+                    } finally {
+                      setLoadingRecipe(false);
+                    }
+                  }}
                   className="group flex items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-left transition-all hover:border-zinc-300 hover:bg-zinc-100 active:scale-[0.98]"
                 >
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-zinc-200 transition-colors group-hover:bg-zinc-300">
-                    <ChefHat className="h-4 w-4 text-zinc-600" />
-                  </div>
+                  {recipe.imageUrl ? (
+                    <div
+                      className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-200 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRecipeLightboxUrl(recipe.imageUrl!);
+                      }}
+                    >
+                      <img
+                        src={recipe.imageUrl}
+                        alt={recipe.title}
+                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-200 transition-colors group-hover:bg-zinc-300">
+                      <ChefHat className="h-6 w-6 text-zinc-600" />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-zinc-800 group-hover:text-zinc-900">
                       {recipe.title}
@@ -449,6 +657,22 @@ export default function PostCard({
           images={images}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
+        />
+      )}
+
+      {recipeLightboxUrl && (
+        <Lightbox
+          images={[recipeLightboxUrl]}
+          initialIndex={0}
+          onClose={() => setRecipeLightboxUrl(null)}
+        />
+      )}
+
+      {selectedRecipeDetail && (
+        <RecipeDetailModal
+          recipe={selectedRecipeDetail}
+          currentUserId={currentUserId}
+          onClose={() => setSelectedRecipeDetail(null)}
         />
       )}
     </>

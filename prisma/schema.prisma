@@ -44,11 +44,12 @@ model Recipe {
   description  String?
   ingredients  String
   instructions String
+  imageUrl     String?
   isPublic     Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  posts Post[] // Post-той олон-олонтой (Many-to-Many) холбогдоно
+  posts Post[]
 }
 
 model MealPlan {

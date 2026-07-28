@@ -37,6 +37,13 @@ export async function createPost(data: {
 }) {
   const userId = await ensureUser();
 
+  if (data.recipeIds && data.recipeIds.length > 0) {
+    await db.recipe.updateMany({
+      where: { id: { in: data.recipeIds }, userId },
+      data: { isPublic: true },
+    });
+  }
+
   const post = await db.post.create({
     data: {
       userId,
@@ -51,7 +58,7 @@ export async function createPost(data: {
     include: {
       user: { select: { id: true, name: true, imageUrl: true } },
       recipes: {
-        select: { id: true, title: true, description: true },
+        select: { id: true, title: true, description: true, imageUrl: true },
       },
     },
   });
@@ -90,10 +97,7 @@ export async function toggleLike(postId: string) {
   }
 }
 
-export async function createComment(data: {
-  postId: string;
-  content: string;
-}) {
+export async function createComment(data: { postId: string; content: string }) {
   const userId = await ensureUser();
 
   if (!data.content.trim()) throw new Error("Comment cannot be empty");

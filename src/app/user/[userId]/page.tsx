@@ -23,7 +23,7 @@ async function fetchUserPosts(userId: string) {
     include: {
       user: { select: { id: true, name: true, imageUrl: true } },
       recipes: {
-        select: { id: true, title: true, description: true },
+        select: { id: true, title: true, description: true, imageUrl: true },
       },
       likes: true,
       comments: {
@@ -68,6 +68,7 @@ export default async function UserPage({
             id: true,
             title: true,
             description: true,
+            imageUrl: true,
             isPublic: true,
           },
           orderBy: { createdAt: "desc" },
@@ -78,6 +79,7 @@ export default async function UserPage({
             id: true,
             title: true,
             description: true,
+            imageUrl: true,
             isPublic: true,
           },
           orderBy: { createdAt: "desc" },

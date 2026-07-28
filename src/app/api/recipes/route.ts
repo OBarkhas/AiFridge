@@ -6,7 +6,16 @@ export async function GET(req: NextRequest) {
   try {
     const userId = await ensureUser();
     const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
     const search = searchParams.get("search")?.toLowerCase();
+
+    if (id) {
+      const recipe = await db.recipe.findUnique({ where: { id } });
+      if (!recipe) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+      return NextResponse.json(recipe);
+    }
 
     let where: Record<string, unknown> = { userId };
 
@@ -37,7 +46,7 @@ export async function POST(req: NextRequest) {
     const userId = await ensureUser();
     const body = await req.json();
 
-    const { title, description, ingredients, instructions } = body;
+    const { title, description, ingredients, instructions, imageUrl } = body;
 
     if (!title || !ingredients || !instructions) {
       return NextResponse.json(
@@ -53,6 +62,7 @@ export async function POST(req: NextRequest) {
         description: description ?? null,
         ingredients,
         instructions,
+        imageUrl: imageUrl ?? null,
       },
     });
 
