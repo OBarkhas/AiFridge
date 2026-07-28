@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import Sidebar from "./Sidebar";
-import OverviewView from "./OverviewView";
-import ItemsView from "./ItemsView";
-import RecipesView from "./RecipesView";
-import MealPlansView from "./MealPlansView";
-import AIView from "./AIView";
-import type { ViewType } from "./Sidebar";
+import { useState, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Sidebar, { type ViewType } from "@/components/Sidebar";
+import OverviewView from "@/components/OverviewView";
+import ItemsView from "@/components/ItemsView";
+import RecipesView from "@/components/RecipesView";
+import MealPlansView from "@/components/MealPlansView";
+import AIView from "@/components/AIView";
 
-export default function Dashboard() {
-  const [activeView, setActiveView] = useState<ViewType>("overview");
+function DashboardView() {
+  const searchParams = useSearchParams();
+  const initialView = (searchParams.get("view") as ViewType) ?? "overview";
+  const [activeView, setActiveView] = useState<ViewType>(initialView);
   const [pendingAIPrompt, setPendingAIPrompt] = useState<string | null>(null);
 
   const handleAskAI = useCallback((recipeTitle: string) => {
@@ -41,6 +43,8 @@ export default function Dashboard() {
             onPromptSent={handleAISent}
           />
         );
+      default:
+        return <OverviewView onNavigate={setActiveView} />;
     }
   };
 
@@ -49,5 +53,13 @@ export default function Dashboard() {
       <Sidebar activeView={activeView} onViewChange={setActiveView} />
       <main className="ml-64 flex-1">{renderView()}</main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-zinc-50"><div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900" /></div>}>
+      <DashboardView />
+    </Suspense>
   );
 }
