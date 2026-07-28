@@ -11,7 +11,6 @@ interface CreatePostFormProps {
   onPostCreated?: () => void;
 }
 
-// ─── Draft persistence ──────────────────────────────────────────
 const DRAFT_KEY = "community_post_draft";
 
 interface Draft {
@@ -42,20 +41,15 @@ function saveDraft(content: string, selectedRecipeIds: string[]) {
       DRAFT_KEY,
       JSON.stringify({ content, selectedRecipeIds }),
     );
-  } catch {
-    // localStorage might be full
-  }
+  } catch {}
 }
 
 function clearDraft() {
   try {
     localStorage.removeItem(DRAFT_KEY);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
-// ─── Component ──────────────────────────────────────────────────
 export default function CreatePostForm({
   currentUserId,
   userRecipes,
@@ -76,7 +70,6 @@ export default function CreatePostForm({
     selectedRecipeIds.includes(r.id),
   );
 
-  // ── Draft restore ─────────────────────────────────────────────
   useEffect(() => {
     const draft = loadDraft();
     if (draft) {
@@ -86,14 +79,12 @@ export default function CreatePostForm({
     }
   }, []);
 
-  // ── Auto-save draft ───────────────────────────────────────────
   useEffect(() => {
     if (draftRestored || content || selectedRecipeIds.length > 0) {
       saveDraft(content, selectedRecipeIds);
     }
   }, [content, selectedRecipeIds, draftRestored]);
 
-  // ── Clean up object URLs ──────────────────────────────────────
   useEffect(() => {
     return () => {
       imagePreviews.forEach((p) => {
@@ -102,10 +93,8 @@ export default function CreatePostForm({
         }
       });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Add images ────────────────────────────────────────────────
   const handleImagesSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files ?? []);
@@ -150,13 +139,11 @@ export default function CreatePostForm({
         ...valid.map((f) => URL.createObjectURL(f)),
       ]);
 
-      // Reset input so same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
     [imageFiles.length],
   );
 
-  // ── Remove single image ──────────────────────────────────────
   const removeImage = useCallback((index: number) => {
     setImageFiles((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => {
@@ -168,12 +155,10 @@ export default function CreatePostForm({
     });
   }, []);
 
-  // ── Remove recipe ─────────────────────────────────────────────
   const removeRecipe = useCallback((recipeId: string) => {
     setSelectedRecipeIds((prev) => prev.filter((id) => id !== recipeId));
   }, []);
 
-  // ── Clear all ─────────────────────────────────────────────────
   const clearAll = useCallback(() => {
     setContent("");
     setImageFiles([]);
@@ -188,7 +173,6 @@ export default function CreatePostForm({
     setUploadError(null);
   }, [imagePreviews]);
 
-  // ── Submit ────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     if ((!content.trim() && imageFiles.length === 0) || isSubmitting) return;
     setIsSubmitting(true);

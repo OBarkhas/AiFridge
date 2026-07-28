@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarCheck, ChevronDown, Plus, Trash2, X, Sparkles } from "lucide-react";
+import {
+  CalendarCheck,
+  ChevronDown,
+  Plus,
+  Trash2,
+  X,
+  Sparkles,
+} from "lucide-react";
 
 interface MealPlan {
   id: string;
@@ -31,7 +38,11 @@ const DAYS = [
 
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 
-export default function MealPlansView({ onAskAI }: { onAskAI?: (recipeTitle: string) => void }) {
+export default function MealPlansView({
+  onAskAI,
+}: {
+  onAskAI?: (recipeTitle: string) => void;
+}) {
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -75,7 +86,6 @@ export default function MealPlansView({ onAskAI }: { onAskAI?: (recipeTitle: str
     fetchMealPlans();
   }, []);
 
-  // Close recipe picker on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (

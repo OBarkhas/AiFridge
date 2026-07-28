@@ -81,9 +81,7 @@ function loadSessions(): ChatSession[] {
 function saveSessions(sessions: ChatSession[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-  } catch {
-    // localStorage might be full or unavailable
-  }
+  } catch {}
 }
 
 function generateTitle(messages: ChatMessage[]): string {
@@ -123,12 +121,10 @@ export default function AIView({
   const inputRef = useRef<HTMLInputElement>(null);
   const activeSessionIdRef = useRef<string | null>(null);
 
-  // Keep the ref in sync
   useEffect(() => {
     activeSessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
 
-  // Load sessions from localStorage on mount
   useEffect(() => {
     const stored = loadSessions();
     setSessions(stored);
@@ -141,23 +137,19 @@ export default function AIView({
     }
   }, []);
 
-  // Auto-send initial prompt when received from parent (e.g. MealPlans crossover)
   useEffect(() => {
     if (initialPrompt) {
       onPromptSent?.();
-      // Use a small delay to let the component fully mount and state settle
+
       const timer = setTimeout(() => {
         handleSend(initialPrompt);
       }, 100);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPrompt]);
 
-  // Save sessions to localStorage when they change
   const skipNextSave = useRef(true);
   useEffect(() => {
-    // Skip the first save (the initial load was just read, no need to write back)
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
@@ -175,7 +167,6 @@ export default function AIView({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Update the active session in the sessions list when messages change
   const persistMessages = useCallback(
     (newMessages: ChatMessage[], sessionId: string | null) => {
       if (!sessionId) return;
@@ -199,7 +190,6 @@ export default function AIView({
   );
 
   const handleNewChat = useCallback(() => {
-    // Save current session if it has content
     if (activeSessionId && hasContent(messages)) {
       persistMessages(messages, activeSessionId);
     }
@@ -221,7 +211,7 @@ export default function AIView({
   const handleSelectSession = useCallback(
     (sessionId: string) => {
       if (sessionId === activeSessionId) return;
-      // Save current session if it has content
+
       if (activeSessionId && hasContent(messages)) {
         persistMessages(messages, activeSessionId);
       }
@@ -284,7 +274,6 @@ export default function AIView({
       setMessages(updatedMessages);
       setLoading(true);
 
-      // Capture the session ID at the time of sending
       let currentSessionId = activeSessionId;
       if (!currentSessionId) {
         currentSessionId = generateId();
@@ -313,7 +302,6 @@ export default function AIView({
           body: JSON.stringify({ messages: history }),
         });
 
-        // Guard: if the user switched sessions while we were loading, discard this response
         if (currentSessionId !== activeSessionIdRef.current) return;
 
         if (!res.ok) {
@@ -326,7 +314,6 @@ export default function AIView({
           actions: { recipes: RecipeAction[]; mealPlans: MealPlanAction[] };
         } = await res.json();
 
-        // Guard again after the second await
         if (currentSessionId !== activeSessionIdRef.current) return;
 
         const assistantMessage: ChatMessage = {
@@ -344,7 +331,6 @@ export default function AIView({
           persistMessages(finalMessages, currentSessionId);
         }
       } catch (err) {
-        // Guard: discard if session changed
         if (currentSessionId !== activeSessionIdRef.current) return;
 
         const msg =

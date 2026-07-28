@@ -75,7 +75,6 @@ function ImageCarousel({
     setCurrentIndex((i) => (i === images.length - 1 ? 0 : i + 1));
   }, [images.length]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") goPrev();
@@ -183,7 +182,6 @@ function Lightbox({
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose, goPrev, goNext]);
 
-  // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {

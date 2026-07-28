@@ -9,7 +9,9 @@ export async function POST(req: NextRequest) {
   try {
     const userId = await ensureUser();
 
-    const { messages }: { messages: { role: "user" | "assistant"; content: string }[] } =
+    const {
+      messages,
+    }: { messages: { role: "user" | "assistant"; content: string }[] } =
       await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -19,7 +21,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch the user's fridge items and saved recipes for context
     const [items, recipes] = await Promise.all([
       db.item.findMany({
         where: { userId },
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
     const expiringSoon = items.filter(
       (item) =>
         new Date(item.expireDate) >= now &&
-        new Date(item.expireDate) <= new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
+        new Date(item.expireDate) <=
+          new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
     );
 
     const itemsContext =
@@ -54,7 +56,9 @@ export async function POST(req: NextRequest) {
     const recipesContext =
       recipes.length > 0
         ? recipes
-            .map((r) => `- ${r.title}${r.description ? `: ${r.description}` : ""}`)
+            .map(
+              (r) => `- ${r.title}${r.description ? `: ${r.description}` : ""}`,
+            )
             .join("\n")
         : "You have no saved recipes yet.";
 
@@ -105,7 +109,7 @@ export async function POST(req: NextRequest) {
       "",
       "## Structured output format for importable data:",
       "",
-      'When you suggest a recipe the user could save, include this EXACT format with valid JSON (place it after your text description):',
+      "When you suggest a recipe the user could save, include this EXACT format with valid JSON (place it after your text description):",
       "",
       "---BEGIN_RECIPE---",
       '{"title": "Recipe Title", "description": "Short description", "ingredients": "Ingredient list", "instructions": "Step-by-step instructions"}',
@@ -125,17 +129,13 @@ export async function POST(req: NextRequest) {
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.7,
       max_tokens: 2048,
     });
 
     const responseText = completion.choices[0]?.message?.content || "";
 
-    // Extract structured recipe blocks
     const extractedRecipes: Array<{
       title: string;
       description?: string;
@@ -151,12 +151,9 @@ export async function POST(req: NextRequest) {
         if (data.title && data.ingredients && data.instructions) {
           extractedRecipes.push(data);
         }
-      } catch {
-        // Skip invalid JSON blocks
-      }
+      } catch {}
     }
 
-    // Extract structured meal plan blocks
     const extractedMealPlans: Array<{
       dayOfWeek: string;
       mealType: string;
@@ -164,16 +161,15 @@ export async function POST(req: NextRequest) {
       instructions?: string;
     }> = [];
 
-    const mealPlanRegex = /---BEGIN_MEALPLAN---\s*([\s\S]*?)\s*---END_MEALPLAN---/g;
+    const mealPlanRegex =
+      /---BEGIN_MEALPLAN---\s*([\s\S]*?)\s*---END_MEALPLAN---/g;
     while ((match = mealPlanRegex.exec(responseText)) !== null) {
       try {
         const data = JSON.parse(match[1].trim());
         if (data.dayOfWeek && data.mealType && data.recipeTitle) {
           extractedMealPlans.push(data);
         }
-      } catch {
-        // Skip invalid JSON blocks
-      }
+      } catch {}
     }
 
     return NextResponse.json({
