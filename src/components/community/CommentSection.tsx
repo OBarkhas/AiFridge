@@ -73,22 +73,22 @@ export default function CommentSection({
           <p className="text-xs text-zinc-400">No comments yet.</p>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="flex gap-2">
+            <div key={comment.id} className="flex gap-2 animate-fade-in">
               <button
                 onClick={() => router.push(`/user/${comment.user.id}`)}
-                className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-medium text-zinc-600 hover:opacity-80 transition-opacity"
+                className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-medium text-zinc-600 ring-1 ring-zinc-200 transition-all duration-200 hover:ring-zinc-400"
               >
                 {comment.user.name?.charAt(0) ?? "?"}
               </button>
               <div className="flex-1">
-                <div className="rounded-lg bg-zinc-100 px-3 py-2">
+                <div className="rounded-xl bg-zinc-100/80 px-3 py-2">
                   <button
                     onClick={() => router.push(`/user/${comment.user.id}`)}
                     className="text-xs font-semibold text-zinc-900 hover:underline"
                   >
                     {comment.user.name ?? "Anonymous"}
                   </button>
-                  <p className="mt-0.5 text-xs text-zinc-700">
+                  <p className="mt-0.5 text-xs text-zinc-700 leading-relaxed">
                     {comment.content}
                   </p>
                 </div>
@@ -102,7 +102,7 @@ export default function CommentSection({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-medium text-zinc-600">
+        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-medium text-zinc-600 ring-1 ring-zinc-200">
           {currentUserId?.charAt(0) ?? "?"}
         </div>
         <input
@@ -116,12 +116,12 @@ export default function CommentSection({
             }
           }}
           placeholder="Write a comment..."
-          className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 placeholder-zinc-400 outline-none focus:border-zinc-400 focus:bg-white transition-all"
+          className="flex-1 rounded-xl border border-zinc-200/80 bg-zinc-50 px-3 py-1.5 text-xs text-zinc-900 placeholder-zinc-400 outline-none transition-all duration-200 focus:border-zinc-300 focus:bg-white focus:ring-2 focus:ring-zinc-900/10"
         />
         <button
           onClick={handleComment}
           disabled={!commentText.trim() || isCommenting}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-30 transition-colors"
+          className="btn-active flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-30"
         >
           {isCommenting ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

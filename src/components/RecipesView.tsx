@@ -726,44 +726,46 @@ export default function RecipesView() {
                 </div>
 
                 <div className="mt-auto pt-4">
-                  <button
-                    onClick={() => openCookModal(recipe)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-zinc-800"
-                  >
-                    <CookingPot className="h-4 w-4" />
-                    Cook & Use Ingredients
-                  </button>
-                </div>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() =>
+                        setExpandedId(expandedId === recipe.id ? null : recipe.id)
+                      }
+                      className="text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+                    >
+                      {expandedId === recipe.id ? "Hide details" : "Show details"}
+                    </button>
 
-                <button
-                  onClick={() =>
-                    setExpandedId(expandedId === recipe.id ? null : recipe.id)
-                  }
-                  className="mt-3 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
-                >
-                  {expandedId === recipe.id ? "Hide details" : "Show details"}
-                </button>
-
-                {expandedId === recipe.id && (
-                  <div className="mt-4 space-y-4 border-t border-zinc-100 pt-4">
-                    <div>
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                        Ingredients
-                      </h4>
-                      <pre className="whitespace-pre-wrap text-sm text-zinc-700 font-sans leading-relaxed">
-                        {recipe.ingredients}
-                      </pre>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                        Instructions
-                      </h4>
-                      <pre className="whitespace-pre-wrap text-sm text-zinc-700 font-sans leading-relaxed">
-                        {recipe.instructions}
-                      </pre>
-                    </div>
+                    <button
+                      onClick={() => openCookModal(recipe)}
+                      className="btn-active inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-zinc-800"
+                    >
+                      <CookingPot className="h-3.5 w-3.5" />
+                      Cook & Use Ingredients
+                    </button>
                   </div>
-                )}
+
+                  {expandedId === recipe.id && (
+                    <div className="mt-4 space-y-4 border-t border-zinc-100 pt-4">
+                      <div>
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                          Ingredients
+                        </h4>
+                        <pre className="whitespace-pre-wrap text-sm text-zinc-700 font-sans leading-relaxed">
+                          {recipe.ingredients}
+                        </pre>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                          Instructions
+                        </h4>
+                        <pre className="whitespace-pre-wrap text-sm text-zinc-700 font-sans leading-relaxed">
+                          {recipe.instructions}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}

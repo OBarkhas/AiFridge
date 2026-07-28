@@ -185,14 +185,14 @@ function RecipeCard({
 
   return (
     <>
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="card-hover rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               {recipe.imageUrl ? (
                 <button
                   onClick={() => setLightboxOpen(true)}
-                  className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-200 hover:opacity-90 transition-opacity"
+                  className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-zinc-200 ring-1 ring-zinc-200 transition-all duration-200 hover:ring-zinc-400"
                 >
                   <img
                     src={recipe.imageUrl}
@@ -201,14 +201,16 @@ function RecipeCard({
                   />
                 </button>
               ) : (
-                <ChefHat className="h-4 w-4 flex-shrink-0 text-zinc-400" />
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-100 ring-1 ring-zinc-200">
+                  <ChefHat className="h-4 w-4 text-zinc-500" />
+                </div>
               )}
               <h3 className="truncate text-sm font-semibold text-zinc-900">
                 {recipe.title}
               </h3>
             </div>
             {recipe.description && (
-              <p className="mt-1.5 line-clamp-2 text-xs text-zinc-500">
+              <p className="mt-1.5 line-clamp-2 text-xs text-zinc-500 leading-relaxed">
                 {recipe.description}
               </p>
             )}
@@ -217,10 +219,10 @@ function RecipeCard({
             <button
               onClick={handleToggle}
               disabled={toggling}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-colors ${
+              className={`btn-active flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-[10px] font-medium transition-all duration-200 ${
                 recipe.isPublic
-                  ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-                  : "border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100"
+                  ? "border-green-200/80 bg-green-50 text-green-700 hover:bg-green-100"
+                  : "border-zinc-200/80 bg-zinc-50 text-zinc-500 hover:bg-zinc-100"
               }`}
             >
               {toggling ? (
@@ -283,9 +285,9 @@ function ProfilePostCard({
 
   return (
     <>
-      <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
+      <div className="card-hover rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
         <div className="px-4 py-3">
-          <p className="whitespace-pre-wrap text-sm text-zinc-800">
+          <p className="whitespace-pre-wrap text-sm text-zinc-800 leading-relaxed">
             {post.content}
           </p>
         </div>
@@ -297,7 +299,7 @@ function ProfilePostCard({
                 <button
                   key={i}
                   onClick={() => setLightboxIndex(i)}
-                  className="group relative h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 hover:opacity-90 transition-opacity"
+                  className="group relative h-16 w-16 overflow-hidden rounded-lg border border-zinc-200/80 bg-zinc-100 transition-all duration-200 hover:ring-2 hover:ring-zinc-300"
                 >
                   <img
                     src={url}
@@ -305,7 +307,7 @@ function ProfilePostCard({
                     className="h-full w-full object-cover"
                   />
                   {images.length > 1 && i === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                       <Maximize2 className="h-4 w-4 text-white" />
                     </div>
                   )}
@@ -325,7 +327,7 @@ function ProfilePostCard({
             {post.recipes.map((recipe) => (
               <div
                 key={recipe.id}
-                className="rounded-lg border border-zinc-200 bg-zinc-50 p-3"
+                className="rounded-xl border border-zinc-200/80 bg-zinc-50 p-3"
               >
                 <div className="flex items-center gap-2">
                   {recipe.imageUrl ? (
@@ -350,16 +352,18 @@ function ProfilePostCard({
           <button
             onClick={handleLike}
             disabled={isLiking}
-            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+            className={`btn-active flex items-center gap-1.5 text-xs font-medium transition-colors ${
               localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500"
             }`}
           >
-            <Heart className={`h-4 w-4 ${localLiked ? "fill-red-500" : ""}`} />
+            <Heart
+              className={`h-4 w-4 transition-transform duration-200 active:scale-125 ${localLiked ? "fill-red-500" : ""}`}
+            />
             {localLikeCount > 0 && <span>{localLikeCount}</span>}
           </button>
           <button
             onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+            className="btn-active flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-700"
           >
             <MessageCircle className="h-4 w-4" />
             {post.comments.length > 0 && <span>{post.comments.length}</span>}
@@ -407,17 +411,17 @@ export default function UserProfile({
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-8 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <div className="animate-fade-in mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mb-8 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-5">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-200 text-xl font-bold text-zinc-600">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 text-xl font-bold text-zinc-600 ring-2 ring-zinc-200">
             {user.name?.charAt(0) ?? "?"}
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold text-zinc-900">
               {user.name ?? "Anonymous"}
             </h1>
-            <div className="mt-1 flex items-center gap-3 text-sm text-zinc-400">
+            <div className="mt-1.5 flex items-center gap-3 text-sm text-zinc-400">
               <span>Joined {formatJoinDate(user.createdAt)}</span>
               <span className="text-zinc-300">·</span>
               <span>
@@ -431,7 +435,7 @@ export default function UserProfile({
       <div className="mb-6 flex border-b border-zinc-200">
         <button
           onClick={() => setActiveTab("recipes")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+          className={`btn-active flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all duration-200 ${
             activeTab === "recipes"
               ? "border-zinc-900 text-zinc-900"
               : "border-transparent text-zinc-500 hover:text-zinc-700"
@@ -442,7 +446,7 @@ export default function UserProfile({
         </button>
         <button
           onClick={() => setActiveTab("posts")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+          className={`btn-active flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all duration-200 ${
             activeTab === "posts"
               ? "border-zinc-900 text-zinc-900"
               : "border-transparent text-zinc-500 hover:text-zinc-700"
@@ -455,8 +459,10 @@ export default function UserProfile({
 
       {activeTab === "recipes" ? (
         localRecipes.length === 0 ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-10 text-center">
-            <ChefHat className="mx-auto mb-3 h-10 w-10 text-zinc-300" />
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-100">
+              <ChefHat className="h-7 w-7 text-zinc-300" />
+            </div>
             <p className="text-sm font-medium text-zinc-500">
               {isOwnProfile ? "You haven't" : "This user hasn't"} shared any
               public recipes yet.
@@ -475,8 +481,10 @@ export default function UserProfile({
           </div>
         )
       ) : posts.length === 0 ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-10 text-center">
-          <FileText className="mx-auto mb-3 h-10 w-10 text-zinc-300" />
+        <div className="rounded-2xl border border-zinc-200/80 bg-white p-12 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-100">
+            <FileText className="h-7 w-7 text-zinc-300" />
+          </div>
           <p className="text-sm font-medium text-zinc-500">No posts yet.</p>
         </div>
       ) : (

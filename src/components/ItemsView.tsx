@@ -306,30 +306,32 @@ export default function ItemsView() {
   ).length;
 
   return (
-    <div className="p-8">
+    <div className="animate-fade-in px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Fridge Items</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
+            Fridge Items
+          </h1>
+          <p className="mt-1.5 text-sm text-zinc-500">
             Manage all items in your fridge.
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-zinc-800"
+          className="btn-active inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-zinc-800"
         >
           <Plus className="h-4 w-4" />
           Add Item
         </button>
       </div>
 
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-1">
         <button
           onClick={() => setStockFilter("all")}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 ${
+          className={`btn-active inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200 ${
             stockFilter === "all"
               ? "bg-zinc-900 text-white shadow-sm"
-              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+              : "bg-white text-zinc-600 border border-zinc-200/80 hover:bg-zinc-50 hover:border-zinc-300"
           }`}
         >
           <Package className="h-3.5 w-3.5" />
@@ -337,10 +339,10 @@ export default function ItemsView() {
         </button>
         <button
           onClick={() => setStockFilter("in-stock")}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 ${
+          className={`btn-active inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200 ${
             stockFilter === "in-stock"
               ? "bg-zinc-900 text-white shadow-sm"
-              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+              : "bg-white text-zinc-600 border border-zinc-200/80 hover:bg-zinc-50 hover:border-zinc-300"
           }`}
         >
           <Package className="h-3.5 w-3.5" />
@@ -348,10 +350,10 @@ export default function ItemsView() {
         </button>
         <button
           onClick={() => setStockFilter("out-of-stock")}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 ${
+          className={`btn-active inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium transition-all duration-200 ${
             stockFilter === "out-of-stock"
               ? "bg-zinc-900 text-white shadow-sm"
-              : "bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-50"
+              : "bg-white text-zinc-600 border border-zinc-200/80 hover:bg-zinc-50 hover:border-zinc-300"
           } ${outOfStockCount > 0 && stockFilter !== "out-of-stock" ? "border-red-200 text-red-600" : ""}`}
         >
           <ShoppingCart className="h-3.5 w-3.5" />
@@ -366,19 +368,19 @@ export default function ItemsView() {
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             placeholder="Search items..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm transition-colors focus:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+            className="w-full rounded-xl border border-zinc-200/80 bg-white py-2.5 pl-10 pr-4 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm transition-all duration-200 focus:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
           />
         </div>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-700 shadow-sm transition-colors focus:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+          className="w-full rounded-xl border border-zinc-200/80 bg-white px-4 py-2.5 text-sm text-zinc-700 shadow-sm transition-all duration-200 focus:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 sm:w-auto"
         >
           <option value="">All Categories</option>
           {CATEGORIES.map((cat) => (
@@ -430,7 +432,7 @@ export default function ItemsView() {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-100 bg-zinc-50">
@@ -533,8 +535,8 @@ export default function ItemsView() {
       )}
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4">
+          <div className="animate-scale-in w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-lg font-semibold text-zinc-900">
@@ -715,8 +717,8 @@ export default function ItemsView() {
       )}
 
       {editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4">
+          <div className="animate-scale-in w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl">
             <h3 className="text-lg font-semibold text-zinc-900">Edit Item</h3>
             <p className="mb-5 text-sm text-zinc-500">
               Update the details for {editingItem.name}.

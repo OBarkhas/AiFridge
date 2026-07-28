@@ -65,7 +65,9 @@ const SUGGESTIONS = [
 ];
 
 function getStorageKey(userId?: string | null): string {
-  return userId ? `ai-fridge-chat-sessions-${userId}` : "ai-fridge-chat-sessions";
+  return userId
+    ? `ai-fridge-chat-sessions-${userId}`
+    : "ai-fridge-chat-sessions";
 }
 
 function generateId(): string {
@@ -509,11 +511,11 @@ export default function AIView({
 
   return (
     <div className="flex h-full w-full">
-      <div className="flex-shrink-0 w-72 border-r border-zinc-200 bg-zinc-50/50 flex flex-col">
-        <div className="border-b border-zinc-200 px-3 py-3">
+      <div className="hidden sm:flex sm:flex-shrink-0 sm:w-72 sm:flex-col sm:border-r sm:border-zinc-200/80 sm:bg-zinc-50/50">
+        <div className="border-b border-zinc-200/80 px-3 py-3">
           <button
             onClick={handleNewChat}
-            className="w-full bg-white hover:bg-zinc-100 border border-zinc-200 text-zinc-900 font-medium rounded-lg p-2.5 flex items-center gap-2 transition-colors"
+            className="btn-active w-full bg-white hover:bg-zinc-100 border border-zinc-200/80 text-zinc-900 font-medium rounded-xl p-2.5 flex items-center gap-2 transition-all duration-200"
           >
             <Plus className="h-4 w-4" />
             <span>New Chat</span>
@@ -599,8 +601,8 @@ export default function AIView({
       </div>
 
       <div className="flex-1 flex flex-col h-full bg-white">
-        <div className="flex items-center gap-3 border-b border-zinc-200 px-4 py-4 sm:px-6">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-900 shadow-sm">
+        <div className="flex items-center gap-3 border-b border-zinc-200/80 bg-white px-4 py-4 sm:px-6">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-900 shadow-sm">
             <Bot className="h-4 w-4 text-white" />
           </div>
           <div className="min-w-0">
@@ -791,7 +793,7 @@ export default function AIView({
           </div>
         </div>
 
-        <div className="border-t border-zinc-200 bg-white px-4 pb-4 pt-3 sm:px-6">
+        <div className="border-t border-zinc-200/80 bg-white px-4 pb-20 pt-3 sm:px-6 sm:pb-4 md:pb-4">
           <div className="mx-auto max-w-3xl">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -803,13 +805,13 @@ export default function AIView({
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={loading}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-12 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm transition-colors focus:border-zinc-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl border border-zinc-200/80 bg-zinc-50 px-4 py-3 pr-12 text-sm text-zinc-900 placeholder-zinc-400 shadow-sm transition-all duration-200 focus:border-zinc-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-900/10 disabled:cursor-not-allowed disabled:opacity-60"
                 />
               </div>
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || loading}
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-sm transition-all duration-150 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-active flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-sm transition-all duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

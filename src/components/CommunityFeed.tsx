@@ -16,7 +16,7 @@ export default function CommunityFeed({
   userRecipes,
 }: CommunityFeedProps) {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="animate-fade-in mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 shadow-sm">
@@ -41,8 +41,10 @@ export default function CommunityFeed({
 
       <div className="space-y-4">
         {posts.length === 0 ? (
-          <div className="rounded-xl border border-zinc-200 bg-white p-10 text-center">
-            <Globe className="mx-auto mb-3 h-10 w-10 text-zinc-300" />
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-zinc-100">
+              <Globe className="h-7 w-7 text-zinc-300" />
+            </div>
             <p className="text-sm font-medium text-zinc-500">No posts yet</p>
             <p className="mt-1 text-xs text-zinc-400">
               Be the first to share with the community!

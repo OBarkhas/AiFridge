@@ -51,7 +51,7 @@ function DashboardView() {
   return (
     <div className="flex min-h-screen bg-zinc-50">
       <Sidebar activeView={activeView} onViewChange={setActiveView} />
-      <main className="ml-64 flex-1">{renderView()}</main>
+      <main className="ml-0 flex-1 pb-20 md:ml-64 md:pb-0">{renderView()}</main>
     </div>
   );
 }

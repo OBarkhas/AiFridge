@@ -104,13 +104,13 @@ function ImageCarousel({
         <img
           src={images[currentIndex]}
           alt={`Post image ${currentIndex + 1}`}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </button>
 
       <button
         onClick={() => onImageClick(currentIndex)}
-        className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/40 text-white opacity-0 transition-opacity hover:bg-black/60 group-hover:opacity-100"
+        className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/40 text-white opacity-0 transition-all duration-200 hover:bg-black/60 group-hover:opacity-100"
         title="View full size"
       >
         <Maximize2 className="h-4 w-4" />
@@ -123,7 +123,7 @@ function ImageCarousel({
               e.stopPropagation();
               goPrev();
             }}
-            className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-zinc-700 shadow-sm opacity-0 transition-all hover:bg-white hover:text-zinc-900 group-hover:opacity-100"
+            className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-zinc-700 shadow-sm opacity-0 transition-all duration-200 hover:bg-white hover:text-zinc-900 group-hover:opacity-100"
             title="Previous image"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -133,7 +133,7 @@ function ImageCarousel({
               e.stopPropagation();
               goNext();
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-zinc-700 shadow-sm opacity-0 transition-all hover:bg-white hover:text-zinc-900 group-hover:opacity-100"
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-zinc-700 shadow-sm opacity-0 transition-all duration-200 hover:bg-white hover:text-zinc-900 group-hover:opacity-100"
             title="Next image"
           >
             <ChevronRight className="h-5 w-5" />
@@ -150,7 +150,7 @@ function ImageCarousel({
                 e.stopPropagation();
                 setCurrentIndex(i);
               }}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-2 rounded-full transition-all duration-200 ${
                 i === currentIndex
                   ? "w-6 bg-white shadow-sm"
                   : "w-2 bg-white/60 hover:bg-white/90"
@@ -225,14 +225,14 @@ function RecipeDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
       onClick={onClose}
     >
       <div
-        className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-xl"
+        className="animate-scale-in relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-200/80 bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-5 py-4">
+        <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white/95 backdrop-blur-xl px-5 py-4">
           <div className="flex items-center gap-2 min-w-0">
             <ChefHat className="h-4 w-4 flex-shrink-0 text-zinc-500" />
             <h2 className="truncate text-base font-semibold text-zinc-900">
@@ -287,20 +287,20 @@ function RecipeDetailModal({
           )}
         </div>
 
-        <div className="sticky bottom-0 border-t border-zinc-100 bg-white px-5 py-3 flex items-center justify-between gap-3">
+        <div className="sticky bottom-0 border-t border-zinc-100 bg-white/95 backdrop-blur-xl px-5 py-3 flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             {!isOwnRecipe && !saved && (
               <button
                 onClick={handleAddToMyRecipes}
                 disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97]"
+                className="btn-active inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChefHat className="h-3.5 w-3.5" />
                 {saving ? "Saving..." : "Add to My Recipes"}
               </button>
             )}
             {saved && (
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-xs font-medium text-green-700">
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-green-200/80 bg-green-50 px-4 py-2 text-xs font-medium text-green-700">
                 <ChefHat className="h-3.5 w-3.5" />
                 Added to your collection!
               </span>
@@ -308,7 +308,7 @@ function RecipeDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+            className="btn-active rounded-xl border border-zinc-200/80 px-4 py-2 text-xs font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-50"
           >
             Close
           </button>
@@ -451,7 +451,6 @@ export default function PostCard({
 
   const isOwner = post.userId === currentUserId;
   const images = post.imageUrls ?? [];
-  const hasMultipleImages = images.length > 1;
 
   const handleLike = async () => {
     if (isLiking) return;
@@ -485,12 +484,12 @@ export default function PostCard({
 
   return (
     <>
-      <div className="rounded-xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div className="card-hover rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
         <div className="flex items-center justify-between p-4 pb-2">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push(`/user/${post.user.id}`)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 hover:opacity-80 transition-opacity"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200 transition-all duration-200 hover:ring-zinc-400"
             >
               {post.user.imageUrl ? (
                 <img
@@ -516,7 +515,7 @@ export default function PostCard({
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-all duration-200 hover:bg-red-50 hover:text-red-500 active:scale-90"
               title="Delete post"
             >
               <Trash2 className="h-4 w-4" />
@@ -526,7 +525,7 @@ export default function PostCard({
 
         {post.content && (
           <div className="px-4 py-2">
-            <p className="whitespace-pre-wrap text-sm text-zinc-800">
+            <p className="whitespace-pre-wrap text-sm text-zinc-800 leading-relaxed">
               {post.content}
             </p>
           </div>
@@ -575,7 +574,7 @@ export default function PostCard({
                       setLoadingRecipe(false);
                     }
                   }}
-                  className="group flex items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-left transition-all hover:border-zinc-300 hover:bg-zinc-100 active:scale-[0.98]"
+                  className="card-hover group flex items-start gap-3 rounded-xl border border-zinc-200/80 bg-zinc-50 p-3 text-left transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-100 active:scale-[0.98]"
                 >
                   {recipe.imageUrl ? (
                     <div
@@ -588,7 +587,7 @@ export default function PostCard({
                       <img
                         src={recipe.imageUrl}
                         alt={recipe.title}
-                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-110"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                     </div>
                   ) : (
@@ -617,12 +616,12 @@ export default function PostCard({
           <button
             onClick={handleLike}
             disabled={isLiking}
-            className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+            className={`btn-active flex items-center gap-1.5 text-xs font-medium transition-colors ${
               localLiked ? "text-red-500" : "text-zinc-500 hover:text-red-500"
             }`}
           >
             <Heart
-              className={`h-4 w-4 transition-transform active:scale-125 ${
+              className={`h-4 w-4 transition-transform duration-200 active:scale-125 ${
                 localLiked ? "fill-red-500" : ""
               }`}
             />
@@ -632,7 +631,7 @@ export default function PostCard({
           </button>
           <button
             onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+            className="btn-active flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-700"
           >
             <MessageCircle className="h-4 w-4" />
             {post.comments.length > 0 && (

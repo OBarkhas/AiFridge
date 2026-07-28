@@ -229,9 +229,9 @@ export default function CreatePostForm({
   const canSubmit = content.trim().length > 0 || imageFiles.length > 0;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md">
       {uploadError && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-100 bg-red-50/80 px-4 py-3 text-sm text-red-700">
           <span className="flex-1">{uploadError}</span>
           <button
             onClick={() => setUploadError(null)}
@@ -247,7 +247,7 @@ export default function CreatePostForm({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         rows={3}
-        className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-zinc-400 focus:bg-white focus:ring-1 focus:ring-zinc-400 transition-all"
+        className="w-full resize-none rounded-xl border border-zinc-200/80 bg-zinc-50 p-3 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition-all duration-200 focus:border-zinc-300 focus:bg-white focus:ring-2 focus:ring-zinc-900/10"
       />
 
       {content.length > 0 && (
@@ -275,15 +275,15 @@ export default function CreatePostForm({
             {imagePreviews.map((preview, i) => (
               <div
                 key={i}
-                className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100"
+                className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-100"
               >
                 <img
                   src={preview}
                   alt={`Preview ${i + 1}`}
-                  className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
+                  className="h-full w-full object-cover transition-opacity duration-200 group-hover:opacity-80"
                 />
 
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                   <span className="text-[9px] font-medium text-white">
                     {imageFiles[i]
                       ? `${(imageFiles[i].size / 1024).toFixed(0)} KB`
@@ -293,7 +293,7 @@ export default function CreatePostForm({
 
                 <button
                   onClick={() => removeImage(i)}
-                  className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-white shadow-md opacity-0 transition-all hover:bg-red-600 hover:scale-110 group-hover:opacity-100"
+                  className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-white shadow-md opacity-0 transition-all duration-200 hover:bg-red-600 hover:scale-110 group-hover:opacity-100"
                   title={`Remove image ${i + 1}`}
                 >
                   <X className="h-3 w-3" />
@@ -309,7 +309,7 @@ export default function CreatePostForm({
           {selectedRecipes.map((recipe) => (
             <div
               key={recipe.id}
-              className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2"
+              className="flex items-center gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50 px-3 py-2"
             >
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-200">
                 <ChefHat className="h-3.5 w-3.5 text-zinc-600" />
@@ -336,7 +336,7 @@ export default function CreatePostForm({
         <div className="flex items-center gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800 transition-colors"
+            className="btn-active flex items-center gap-1.5 rounded-xl border border-zinc-200/80 px-3 py-2 text-xs font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-50 hover:text-zinc-800"
           >
             <ImagePlus className="h-3.5 w-3.5" />
             {imageFiles.length > 0 ? "Add More Photos" : "Photos"}
@@ -353,10 +353,10 @@ export default function CreatePostForm({
           <div className="relative">
             <button
               onClick={() => setShowRecipeDropdown(!showRecipeDropdown)}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+              className={`btn-active flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-all duration-200 ${
                 selectedRecipeIds.length > 0
                   ? "border-zinc-300 bg-zinc-100 text-zinc-700"
-                  : "border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800"
+                  : "border-zinc-200/80 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-800"
               }`}
             >
               <ChefHat className="h-3.5 w-3.5" />
@@ -370,7 +370,7 @@ export default function CreatePostForm({
                   className="fixed inset-0 z-10"
                   onClick={() => setShowRecipeDropdown(false)}
                 />
-                <div className="absolute top-full left-0 z-20 mt-1 w-64 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+                <div className="absolute top-full left-0 z-20 mt-1 w-64 rounded-xl border border-zinc-200/80 bg-white py-1 shadow-lg">
                   <div className="border-b border-zinc-100 px-3 py-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
                       Your Recipes
@@ -431,7 +431,7 @@ export default function CreatePostForm({
           <button
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
-            className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97]"
+            className="btn-active flex items-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-sm transition-all duration-200 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? (
               <>

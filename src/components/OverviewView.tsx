@@ -114,39 +114,45 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
   ];
 
   return (
-    <div className="p-8">
+    <div className="animate-fade-in px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-zinc-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
+          Dashboard
+        </h1>
+        <p className="mt-1.5 text-sm text-zinc-500">
           Overview of your fridge, recipes, and meal plans.
         </p>
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {stats.map((stat) => (
+        {stats.map((stat, index) => (
           <button
             key={stat.label}
             onClick={() => onNavigate(stat.view)}
-            className="group rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-all duration-150 hover:border-zinc-300 hover:shadow-md text-left"
+            className="card-hover group relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:border-zinc-300 hover:shadow-md text-left"
+            style={{ animationDelay: `${index * 50}ms` }}
           >
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                  {stat.label}
-                </p>
-                {loading ? (
-                  <div className="h-8 w-12 animate-pulse rounded bg-zinc-100" />
-                ) : (
-                  <p className="text-3xl font-bold text-zinc-900">
-                    {stat.value}
+            <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-zinc-50/50 transition-transform duration-500 group-hover:scale-150" />
+            <div className="relative">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    {stat.label}
                   </p>
-                )}
-                {stat.sub && (
-                  <p className="text-xs text-zinc-400">{stat.sub}</p>
-                )}
-              </div>
-              <div className="rounded-lg bg-zinc-50 p-2.5 transition-colors group-hover:bg-zinc-100">
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                  {loading ? (
+                    <div className="skeleton h-9 w-16" />
+                  ) : (
+                    <p className="text-3xl font-bold tracking-tight text-zinc-900">
+                      {stat.value}
+                    </p>
+                  )}
+                  {stat.sub && (
+                    <p className="text-xs text-zinc-400">{stat.sub}</p>
+                  )}
+                </div>
+                <div className="rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-100 transition-all duration-300 group-hover:bg-zinc-100 group-hover:ring-zinc-200">
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                </div>
               </div>
             </div>
           </button>
@@ -154,14 +160,14 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div className="animate-slide-in-up rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
             <h2 className="text-sm font-semibold text-zinc-900">
               Expiring Soon
             </h2>
             <button
               onClick={() => onNavigate("items")}
-              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700 transition-colors"
+              className="btn-active flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-500 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-700"
             >
               View all <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -170,10 +176,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
             {loading ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-12 animate-pulse rounded-lg bg-zinc-100"
-                  />
+                  <div key={i} className="skeleton h-14" />
                 ))}
               </div>
             ) : expiringSoon.length > 0 ? (
@@ -186,7 +189,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
                   return (
                     <li
                       key={item.id}
-                      className="flex items-center justify-between rounded-lg bg-amber-50 border border-amber-100 px-4 py-3"
+                      className="card-hover flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50/50 px-4 py-3 transition-all duration-200 hover:border-amber-200 hover:bg-amber-50"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-zinc-900 truncate">
@@ -196,7 +199,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
                           <p className="text-xs text-zinc-500">{item.amount}</p>
                         )}
                       </div>
-                      <span className="ml-3 flex-shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                      <span className="ml-3 flex-shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
                         {daysLeft === 0
                           ? "Today"
                           : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
@@ -207,11 +210,13 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
               </ul>
             ) : (
               <div className="flex flex-col items-center py-8 text-center">
-                <Refrigerator className="mb-3 h-8 w-8 text-zinc-300" />
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100">
+                  <Refrigerator className="h-6 w-6 text-zinc-400" />
+                </div>
                 <p className="text-sm text-zinc-500">No items expiring soon</p>
                 <button
                   onClick={() => onNavigate("items")}
-                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-900 transition-colors"
+                  className="btn-active mt-3 inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-zinc-800"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add items to your fridge
@@ -221,7 +226,7 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
           </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
+        <div className="animate-slide-in-up rounded-2xl border border-zinc-200/80 bg-white shadow-sm" style={{ animationDelay: "100ms" }}>
           <div className="border-b border-zinc-100 px-5 py-4">
             <h2 className="text-sm font-semibold text-zinc-900">
               Quick Actions
@@ -231,9 +236,9 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
             <div className="grid grid-cols-1 gap-3">
               <button
                 onClick={() => onNavigate("items")}
-                className="flex items-center gap-4 rounded-lg border border-zinc-200 px-4 py-3.5 transition-all duration-150 hover:border-zinc-300 hover:bg-zinc-50 text-left"
+                className="card-hover group flex items-center gap-4 rounded-xl border border-zinc-200/80 px-4 py-3.5 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50/80 text-left active:scale-[0.98]"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 group-hover:bg-zinc-200 transition-colors">
                   <Plus className="h-5 w-5 text-zinc-700" />
                 </div>
                 <div>
@@ -248,9 +253,9 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
 
               <button
                 onClick={() => onNavigate("recipes")}
-                className="flex items-center gap-4 rounded-lg border border-zinc-200 px-4 py-3.5 transition-all duration-150 hover:border-zinc-300 hover:bg-zinc-50 text-left"
+                className="card-hover group flex items-center gap-4 rounded-xl border border-zinc-200/80 px-4 py-3.5 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50/80 text-left active:scale-[0.98]"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 group-hover:bg-zinc-200 transition-colors">
                   <ChefHat className="h-5 w-5 text-zinc-700" />
                 </div>
                 <div>
@@ -265,9 +270,9 @@ export default function OverviewView({ onNavigate }: OverviewViewProps) {
 
               <button
                 onClick={() => onNavigate("meal-plans")}
-                className="flex items-center gap-4 rounded-lg border border-zinc-200 px-4 py-3.5 transition-all duration-150 hover:border-zinc-300 hover:bg-zinc-50 text-left"
+                className="card-hover group flex items-center gap-4 rounded-xl border border-zinc-200/80 px-4 py-3.5 transition-all duration-200 hover:border-zinc-300 hover:bg-zinc-50/80 text-left active:scale-[0.98]"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 group-hover:bg-zinc-200 transition-colors">
                   <CalendarCheck className="h-5 w-5 text-zinc-700" />
                 </div>
                 <div>
