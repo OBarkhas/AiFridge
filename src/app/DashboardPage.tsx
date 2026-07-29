@@ -12,6 +12,7 @@ import AIView from "@/components/AIView";
 function DashboardView() {
   const searchParams = useSearchParams();
   const initialView = (searchParams.get("view") as ViewType) ?? "overview";
+  const highlightItemId = searchParams.get("highlight") ?? undefined;
   const [activeView, setActiveView] = useState<ViewType>(initialView);
   const [pendingAIPrompt, setPendingAIPrompt] = useState<string | null>(null);
 
@@ -31,7 +32,7 @@ function DashboardView() {
       case "overview":
         return <OverviewView onNavigate={setActiveView} />;
       case "items":
-        return <ItemsView />;
+        return <ItemsView highlightItemId={highlightItemId} />;
       case "recipes":
         return <RecipesView />;
       case "meal-plans":

@@ -12,6 +12,7 @@ import {
   Globe,
   User,
 } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 
 export type ViewType =
   | "overview"
@@ -97,7 +98,7 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r border-zinc-200/80 bg-white/95 backdrop-blur-xl md:flex">
-        <div className="flex h-16 items-center gap-3 border-b border-zinc-100 px-6">
+        <div className="flex h-16 items-center justify-between border-b border-zinc-100 px-4">
           <button
             onClick={() => router.push("/")}
             className="flex items-center gap-3 group"
@@ -112,6 +113,7 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
               <p className="text-[11px] text-zinc-400">Smart Kitchen</p>
             </div>
           </button>
+          <NotificationBell />
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
@@ -134,7 +136,7 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
                     }`}
                   >
                     {active && (
-                      <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-zinc-900" />
+                      <span className="absolute right-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-zinc-900" />
                     )}
                     <item.icon
                       className={`h-4.5 w-4.5 flex-shrink-0 transition-transform duration-200 ${

@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
+  AlertTriangle,
+  Refrigerator,
 } from "lucide-react";
 
 interface User {
@@ -401,6 +403,35 @@ export default function UserProfile({
 }: UserProfileProps) {
   const [activeTab, setActiveTab] = useState<"recipes" | "posts">("recipes");
   const [localRecipes, setLocalRecipes] = useState(recipes);
+  const [expiringItems, setExpiringItems] = useState<
+    { id: string; name: string; amount: string | null; expireDate: string }[]
+  >([]);
+  const [expiringLoading, setExpiringLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function fetchExpiring() {
+      try {
+        const res = await fetch("/api/items");
+        if (res.ok) {
+          const items = await res.json();
+          const now = new Date();
+          const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+          const expiring = items.filter(
+            (item: { expireDate: string }) =>
+              new Date(item.expireDate) >= now &&
+              new Date(item.expireDate) <= inThreeDays,
+          );
+          setExpiringItems(expiring);
+        }
+      } catch (err) {
+        console.error("Failed to fetch expiring items:", err);
+      } finally {
+        setExpiringLoading(false);
+      }
+    }
+    fetchExpiring();
+  }, []);
 
   const handleToggleVisibility = (recipeId: string) => {
     setLocalRecipes((prev) =>
@@ -408,6 +439,14 @@ export default function UserProfile({
         r.id === recipeId ? { ...r, isPublic: !r.isPublic } : r,
       ),
     );
+  };
+
+  const getDaysText = (expireDate: string) => {
+    const diff = new Date(expireDate).getTime() - new Date().getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return "Expires today!";
+    if (days === 1) return "Expires tomorrow!";
+    return `${days} days left`;
   };
 
   return (
@@ -431,6 +470,57 @@ export default function UserProfile({
           </div>
         </div>
       </div>
+
+      {!expiringLoading && expiringItems.length > 0 && (
+        <div className="mb-6 rounded-2xl border border-red-200/80 bg-red-50/80 p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-100">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-red-900">
+                Expiring Soon Alert
+              </h3>
+              <p className="mt-0.5 text-xs text-red-600/80">
+                {expiringItems.length === 1
+                  ? "1 item in your fridge is about to expire"
+                  : `${expiringItems.length} items in your fridge are about to expire`}
+              </p>
+              <ul className="mt-3 space-y-2">
+                {expiringItems.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      onClick={() =>
+                        router.push(`/?view=items&highlight=${item.id}`)
+                      }
+                      className="group flex w-full items-center justify-between rounded-xl border border-red-200/60 bg-white px-3.5 py-2.5 transition-all duration-200 hover:border-red-300 hover:shadow-sm active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-red-50">
+                          <Refrigerator className="h-3.5 w-3.5 text-red-500" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-zinc-900 group-hover:text-zinc-700">
+                            {item.name}
+                          </p>
+                          {item.amount && (
+                            <p className="truncate text-xs text-zinc-400">
+                              {item.amount}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="ml-3 flex-shrink-0 rounded-full bg-red-100 px-3 py-1 text-[10px] font-semibold text-red-700">
+                        {getDaysText(item.expireDate)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6 flex border-b border-zinc-200">
         <button

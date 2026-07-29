@@ -45,12 +45,18 @@ function isOutOfStock(amount: string | null): boolean {
   return parseFloat(match[1]) === 0;
 }
 
-export default function ItemsView() {
+export default function ItemsView({
+  highlightItemId,
+}: {
+  highlightItemId?: string;
+}) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const highlightedRef = useRef<HTMLTableRowElement>(null);
+  const [highlightActive, setHighlightActive] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -107,7 +113,10 @@ export default function ItemsView() {
     if (!confirm("Delete this item?")) return;
     try {
       const res = await fetch(`/api/items?id=${id}`, { method: "DELETE" });
-      if (res.ok) setItems((prev) => prev.filter((item) => item.id !== id));
+      if (res.ok) {
+        setItems((prev) => prev.filter((item) => item.id !== id));
+        window.dispatchEvent(new CustomEvent("fridge-items-updated"));
+      }
     } catch (err) {
       console.error("Failed to delete item:", err);
     }
@@ -137,11 +146,11 @@ export default function ItemsView() {
         }),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setItems((prev) =>
-          prev.map((item) => (item.id === updated.id ? updated : item)),
-        );
         setEditingItem(null);
+
+        await fetchItems();
+
+        window.dispatchEvent(new CustomEvent("fridge-items-updated"));
       }
     } catch (err) {
       console.error("Failed to update item:", err);
@@ -305,6 +314,29 @@ export default function ItemsView() {
     isOutOfStock(item.amount),
   ).length;
 
+  useEffect(() => {
+    if (highlightItemId && !loading) {
+      setHighlightActive(true);
+
+      const scrollTimer = setTimeout(() => {
+        highlightedRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 300);
+
+      const pulseTimer = setTimeout(() => {
+        setHighlightActive(false);
+      }, 4000);
+      return () => {
+        clearTimeout(scrollTimer);
+        clearTimeout(pulseTimer);
+      };
+    } else {
+      setHighlightActive(false);
+    }
+  }, [highlightItemId, loading]);
+
   return (
     <div className="animate-fade-in px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -459,10 +491,13 @@ export default function ItemsView() {
                 const isZeroStock = isOutOfStock(item.amount);
                 return (
                   <tr
+                    ref={
+                      item.id === highlightItemId ? highlightedRef : undefined
+                    }
                     key={item.id}
                     className={`transition-colors hover:bg-zinc-50 ${
                       isZeroStock ? "bg-red-50/30" : ""
-                    }`}
+                    }                    ${item.id === highlightItemId && highlightActive ? "ring-2 ring-red-400 bg-red-50/60 animate-pulse-soft" : item.id === highlightItemId ? "ring-2 ring-red-400 bg-red-50/60" : ""}`}
                   >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
